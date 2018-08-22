@@ -4,8 +4,6 @@ const axios = require('axios')
 const container = require('@arkecosystem/core-container')
 const logger = container.resolvePlugin('logger')
 const config = container.resolvePlugin('config')
-const threads = require('threads')
-const thread = threads.spawn(`${__dirname}/workers/download.js`)
 
 module.exports = class Peer {
   /**
@@ -90,41 +88,37 @@ module.exports = class Peer {
 
   async getTransactionsFromIds (ids) {
     // useless since there is a bug on v1
-    const url = `/peer/transactionsFromIds?ids=${ids.join(',')}`
-    const result = await this.__get(url)
-    if (result.success) return result.transactions
-    else return []
+    const response = await this.__get(`/peer/transactionsFromIds?ids=${ids.join(',')}`)
+
+    return response.success ? response.transactions : []
   }
 
   async getTransactionsFromBlock (blockId) {
-    const url = `/api/transactions?blockId=${blockId}`
-    const result = await this.__get(url)
-    if (result.success) return result.transactions
-    else return []
+    const response = await this.__get(`/api/transactions?blockId=${blockId}`)
+
+    return response.success ? response.transactions : []
   }
 
   /**
    * Download blocks from peer.
-   * @param  {Number}               fromBlockHeight
+   * @param  {Number} fromBlockHeight
    * @return {(Object[]|undefined)}
    */
   async downloadBlocks (fromBlockHeight) {
-    const message = {
-      height: fromBlockHeight,
-      headers: this.headers,
-      url: this.url
-    }
-
     try {
-      const blocks = await thread.send(message).promise()
+      const { data } = await axios.get(`${this.url}/peer/blocks`, {
+        params: { lastBlockHeight: fromBlockHeight },
+        headers: this.headers,
+        timeout: 60000
+      })
 
-      const size = blocks.length
+      const size = data.blocks.length
 
       if (size === 100 || size === 400) {
         this.downloadSize = size
       }
 
-      return blocks
+      return data.blocks
     } catch (error) {
       logger.debug(`Cannot download blocks from peer ${this.url} - ${JSON.stringify(error)}`)
 
@@ -164,6 +158,27 @@ module.exports = class Peer {
     const body = await this.__get('/peer/list')
 
     return body.peers.filter(peer => !config.peers.blackList.includes(peer.ip))
+  }
+
+  /**
+   * Check if peer has common blocks.
+   * @param  {[]String} ids
+   * @return {Boolean}
+   */
+  async hasCommonBlocks (ids) {
+    try {
+      let url = `/peer/blocks/common?ids=${ids.join(',')}`
+      if (ids.length === 1) {
+        url += ','
+      }
+      const body = await this.__get(url)
+
+      return body && body.success && body.common
+    } catch (error) {
+      logger.error(`Could not determine common blocks with ${this.ip}: ${error}`)
+    }
+
+    return false
   }
 
   /**

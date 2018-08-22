@@ -8,14 +8,16 @@ This repository / branch contains everything to get you started on Devnet V2 (ma
 
 ## Installation
 
-First, clone this repository and check-out the `devnet-v2` branch.
+- Development : https://docs.ark.io/core/development.html
+- Docker : https://docs.ark.io/core/docker.html
 
 ```
 git clone https://github.com/air1one/core
 git checkout devnet-v2
 ```
 
-Then run the standard Ark V2 install process :
+- API v1 : https://docs.ark.io/developers/api/public/v1/
+- API v2 : https://docs.ark.io/developers/api/public/v2/
 
 ```
 cd core

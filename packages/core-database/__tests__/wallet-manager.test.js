@@ -7,15 +7,19 @@ const { transactionBuilder } = require('@arkecosystem/crypto')
 const { TRANSACTION_TYPES } = require('@arkecosystem/crypto').constants
 
 const block = new Block(require('./__fixtures__/block.json')) // eslint-disable-line no-unused-vars
-const genesisBlock = require('./__fixtures__/genesisBlock') // eslint-disable-line no-unused-vars
 const walletData1 = require('./__fixtures__/wallets.json')[0]
 const walletData2 = require('./__fixtures__/wallets.json')[1]
 const walletDataFake = require('./__fixtures__/wallets.json')[2]
 
+let genesisBlock // eslint-disable-line no-unused-vars
 let walletManager
 
 beforeAll(async (done) => {
   await app.setUp()
+
+  // Create the genesis block after the setup has finished or else it uses a potentially
+  // wrong network config.
+  genesisBlock = require('./__fixtures__/genesisBlock')
 
   walletManager = new (require('../lib/wallet-manager'))()
 
@@ -249,6 +253,60 @@ describe('Wallet Manager', () => {
         } catch (error) {
           expect(sender.balance).toBe(balance)
           expect(recipient.balance).toBe(0)
+        }
+      })
+    })
+
+    describe('when the transaction is a delegate registration', () => {
+      const username = 'delegate_1'
+
+      let sender
+      let transaction
+
+      beforeEach(() => {
+        sender = new Wallet(walletData1.address)
+
+        // NOTE: the order is important: we sign a transaction with a random pass
+        // to override the sender public key with a fake one
+
+        transaction = transactionBuilder
+          .delegateRegistration()
+          .usernameAsset(username)
+          .sign(Math.random().toString(36))
+          .build()
+
+        sender.publicKey = transaction.senderPublicKey
+
+        walletManager.reindex(sender)
+      })
+
+      it('should apply the transaction to the sender', async () => {
+        const balance = 30 * Math.pow(10, 8)
+        sender.balance = balance
+
+        expect(sender.balance).toBe(balance)
+
+        await walletManager.applyTransaction(transaction)
+
+        expect(sender.balance).toBe(balance - transaction.fee)
+        expect(sender.username).toBe(username)
+        expect(walletManager.getWalletByUsername(username)).toBe(sender)
+      })
+
+      it('should fail if the transaction cannot be applied', async () => {
+        const balance = 1
+        sender.balance = balance
+
+        expect(sender.balance).toBe(balance)
+
+        try {
+          expect(async () => {
+            await walletManager.applyTransaction(transaction)
+          }).toThrowError(/apply transaction/)
+
+          expect(null).toBe('this should fail if no error is thrown')
+        } catch (error) {
+          expect(sender.balance).toBe(balance)
         }
       })
     })

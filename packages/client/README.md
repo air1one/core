@@ -4,20 +4,13 @@
 
 ## Installation
 
+### Node.js
+
 ```bash
 yarn add @arkecosystem/client
 ```
 
-If you want to use the CDN version, is avialable two bundles:
-
-- Without the [@arkecosystem/crypto](http://github.com/ArkEcosystem/ArkEcosystem/core/packages/crypto) package: (_You will need to import both_)
-
-```html
-<script src="https://unpkg.com/@arkecosystem/crypto/dist/index.umd.js"></script>
-<script src="https://unpkg.com/@arkecosystem/client/dist/index.umd.js"></script>
-```
-
-- And a standalone file:
+If you want to use the CDN version:
 
 ```html
 <script src="https://unpkg.com/@arkecosystem/client/dist/bundle.umd.js"></script>
@@ -25,17 +18,24 @@ If you want to use the CDN version, is avialable two bundles:
 
 ## Usage
 
-Import the library in node.js:
+Import the library in Node.js:
 
 ```
-import ArkClient from @arkecosystem/client
+import ArkEcosystemClient from @arkecosystem/client
+```
+or
+```
+const ArkEcosystemClient require('@arkecosystem/client')
 ```
 
 Use the library:
 
 ```
-const client = new ArkClient('<your host here>')
+const client = new ArkEcosystemClient('<your host here>')
 ```
+
+### Examples
+There are more examples in the `examples` folder.
 
 ## Security
 

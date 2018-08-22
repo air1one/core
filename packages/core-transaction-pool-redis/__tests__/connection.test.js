@@ -13,10 +13,11 @@ beforeAll(async () => {
 
   const RedisConnection = require('../lib/connection.js')
   connection = new RedisConnection(defaultConfig)
-  connection = connection.make()
+  connection = await connection.make()
 })
 
 afterAll(async () => {
+  await connection.disconnect()
   await app.tearDown()
 })
 
@@ -44,6 +45,25 @@ describe('Connection', () => {
       await connection.addTransaction(mockData.dummy1)
 
       await expect(connection.getPoolSize()).resolves.toBe(1)
+    })
+  })
+
+  describe('getSenderSize', () => {
+    it('should be a function', () => {
+      expect(connection.getSenderSize).toBeFunction()
+    })
+
+    it('should return 0 if no transactions were added', async () => {
+      await expect(connection.getSenderSize('undefined')).resolves.toBe(0)
+    })
+
+    it('should return 2 if transactions were added', async () => {
+      await expect(connection.getSenderSize(mockData.dummy1.senderPublicKey)).resolves.toBe(0)
+
+      await connection.addTransaction(mockData.dummy1)
+      await connection.addTransaction(mockData.dummy2)
+
+      await expect(connection.getSenderSize(mockData.dummy1.senderPublicKey)).resolves.toBe(2)
     })
   })
 
@@ -113,6 +133,22 @@ describe('Connection', () => {
       await expect(connection.getPoolSize()).resolves.toBe(1)
 
       await connection.removeTransaction(mockData.dummy1)
+
+      await expect(connection.getPoolSize()).resolves.toBe(0)
+    })
+  })
+
+  describe('removeTransactionById', () => {
+    it('should be a function', () => {
+      expect(connection.removeTransactionById).toBeFunction()
+    })
+
+    it('should remove the specified transaction from the pool (by id)', async () => {
+      await connection.addTransaction(mockData.dummy1)
+
+      await expect(connection.getPoolSize()).resolves.toBe(1)
+
+      await connection.removeTransactionById(mockData.dummy1.id)
 
       await expect(connection.getPoolSize()).resolves.toBe(0)
     })

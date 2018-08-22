@@ -12,48 +12,48 @@ const logger = container.resolvePlugin('logger')
 const emitter = container.resolvePlugin('event-emitter')
 
 const Peer = require('./peer')
-const isMyself = require('./utils/is-myself')
+const guard = require('./guard')
 const networkState = require('./utils/network-state')
 
-module.exports = class Monitor {
+const checkDNS = require('./utils/check-dns')
+const checkNTP = require('./utils/check-ntp')
+
+class Monitor {
   /**
    * @constructor
-   * @param  {PeerManager} manager
    * @throws {Error} If no seed peers
    */
-  constructor (manager) {
-    this.manager = manager
-    this.config = config
+  constructor () {
     this.peers = {}
-    this.suspendedPeers = {}
-    this.startForgers = moment().add(this.config.peers.coldStart || 30, 'seconds')
-
-    if (!this.config.peers.list) {
-      logger.error('No seed peers defined in peers.json :interrobang:')
-
-      process.exit(1)
-    }
-
-    this.config.peers.list
-      .filter(peer => (peer.ip !== '127.0.0.1' || peer.port !== container.resolveOptions('p2p').port))
-      .forEach(peer => (this.peers[peer.ip] = new Peer(peer.ip, peer.port)), this)
+    this.startForgers = moment().add(config.peers.coldStart || 30, 'seconds')
   }
 
   /**
    * Method to run on startup.
-   * @param {Boolean} networkStart
+   * @param {Object} config
    */
-  async start (networkStart = false) {
-    if (!networkStart) {
+  async start (config) {
+    this.config = config
+
+    await this.__checkDNSConnectivity(config.dns)
+    await this.__checkNTPConnectivity(config.ntp)
+
+    this.guard = guard.init(this)
+
+    this.__filterPeers()
+
+    if (!config.networkStart) {
       await this.updateNetworkStatus()
     }
+
+    return this
   }
 
   /**
    * Update network status (currently only peers are updated).
    * @return {Promise}
    */
-  async updateNetworkStatus (fast = false) {
+  async updateNetworkStatus () {
     try {
       // TODO: for tests that involve peers we need to sync them
       if (process.env.ARK_ENV !== 'test') {
@@ -61,8 +61,8 @@ module.exports = class Monitor {
         await this.cleanPeers()
       }
 
-      if (Object.keys(this.peers).length < this.config.peers.list.length - 1 && process.env.ARK_ENV !== 'test') {
-        this.config.peers.list
+      if (Object.keys(this.peers).length < config.peers.list.length - 1 && process.env.ARK_ENV !== 'test') {
+        config.peers.list
           .forEach(peer => (this.peers[peer.ip] = new Peer(peer.ip, peer.port)), this)
 
         return this.updateNetworkStatus()
@@ -70,9 +70,62 @@ module.exports = class Monitor {
     } catch (error) {
       logger.error(`Network Status: ${error.message}`)
 
-      this.config.peers.list.forEach(peer => (this.peers[peer.ip] = new Peer(peer.ip, peer.port)), this)
+      config.peers.list.forEach(peer => (this.peers[peer.ip] = new Peer(peer.ip, peer.port)), this)
 
       return this.updateNetworkStatus()
+    }
+  }
+
+  /**
+   * Accept and store a valid peer.
+   * @param  {Peer} peer
+   * @throws {Error} If invalid peer
+   */
+  async acceptNewPeer (peer) {
+    if (this.guard.isSuspended(peer) || this.guard.isMyself(peer) || process.env.ARK_ENV === 'test') {
+      return
+    }
+
+    if (this.guard.isBlacklisted(peer.ip)) {
+      logger.debug(`Rejected peer ${peer.ip} as it is blacklisted`)
+
+      this.guard.suspend(peer)
+
+      return
+    }
+
+    if (!this.guard.isValidVersion(peer) && !this.guard.isWhitelisted(peer)) {
+      logger.debug(`Rejected peer ${peer.ip} as it doesn't meet the minimum version requirements. Expected: ${config.peers.minimumVersion} - Received: ${peer.version}`)
+
+      this.guard.suspend(peer)
+
+      return
+    }
+
+    if (this.getPeer(peer.ip)) {
+      return
+    }
+
+    if (peer.nethash !== config.network.nethash) {
+      throw new Error('Request is made on the wrong network')
+    }
+
+    const newPeer = new Peer(peer.ip, peer.port)
+
+    try {
+      await newPeer.ping(1500)
+
+      this.peers[peer.ip] = newPeer
+      logger.debug(`Accepted new peer ${newPeer.ip}:${newPeer.port}`)
+
+      emitter.emit('peer.added', newPeer)
+    } catch (error) {
+      logger.debug(`Could not accept new peer '${newPeer.ip}:${newPeer.port}' - ${error}`)
+
+      this.guard.suspend(newPeer)
+      // we don't throw since we answer unreacheable peer
+      // TODO: in next version, only accept to answer to sound peers that have properly registered
+      // hence we will throw an error
     }
   }
 
@@ -84,7 +137,7 @@ module.exports = class Monitor {
     let keys = Object.keys(this.peers)
     let count = 0
     let unresponsivePeers = 0
-    const pingDelay = fast ? 1500 : this.config.peers.globalTimeout
+    const pingDelay = fast ? 1500 : config.peers.globalTimeout
     const max = keys.length
 
     logger.info(`Checking ${max} peers :telescope:`)
@@ -117,55 +170,29 @@ module.exports = class Monitor {
   }
 
   /**
-   * ban an existing peer.
+   * Suspend an existing peer.
    * @param  {Peer} peer
-   * @return {Promise}
+   * @return {void}
    */
-  banPeer (ip) {
+  suspendPeer (ip) {
     // TODO make a couple of tests on peer to understand the issue with this peer and decide how long to ban it
     const peer = this.peers[ip]
+
     if (peer) {
-      if (this.__isSuspended(peer)) {
-        this.suspendedPeers[ip].until = moment(this.suspendedPeers[ip].until).add(1, 'day')
+      if (this.guard.isSuspended(peer)) {
+        this.guard.suspensions[ip].until = moment(this.guard.suspensions[ip].until).add(1, 'day')
       } else {
-         this.__suspendPeer(peer)
+        this.guard.suspend(peer)
       }
-      logger.debug(`banned peer ${ip} until ${this.suspendedPeers[ip].until}`)
     }
   }
 
   /**
-   * Accept and store a valid peer.
-   * @param  {Peer} peer
-   * @throws {Error} If invalid peer
+   * Reset banned peer list.
+   * @return {void}
    */
-  async acceptNewPeer (peer) {
-    if (this.getPeer(peer.ip) || this.__isSuspended(peer) || process.env.ARK_ENV === 'test' || isMyself(peer.ip)) {
-      return
-    }
-
-    if (peer.nethash !== this.config.network.nethash) {
-      throw new Error('Request is made on the wrong network')
-    }
-
-    const newPeer = new Peer(peer.ip, peer.port)
-
-    try {
-      await newPeer.ping(1500)
-
-      this.peers[peer.ip] = newPeer
-      logger.debug(`Accepted new peer ${newPeer.ip}:${newPeer.port}`)
-
-      emitter.emit('peer.added', newPeer)
-    } catch (error) {
-      logger.debug(`Could not accept new peer '${newPeer.ip}:${newPeer.port}' - ${error}`)
-
-      this.__suspendPeer(newPeer)
-
-      // we don't throw since we answer unreacheable peer
-      // TODO: in next version, only accept to answer to sound peers that have properly registered
-      // hence we will throw an error
-    }
+  async resetSuspendedPeers () {
+    return this.guard.resetSuspendedPeers()
   }
 
   /**
@@ -185,12 +212,26 @@ module.exports = class Monitor {
     return this.peers[ip]
   }
 
+  async peerHasCommonBlocks (peer, blockIds) {
+    if (!this.guard.isMyself(peer) && !(await peer.hasCommonBlocks(blockIds))) {
+      logger.error(`Could not get common block for ${peer.ip}`)
+
+      this.guard.suspend(peer)
+
+      return false
+    }
+
+    return true
+  }
+
   /**
    * Get a random, available peer.
    * @param  {(Number|undefined)} acceptableDelay
    * @return {Peer}
    */
-  getRandomPeer (acceptableDelay) {
+  getRandomPeer (acceptableDelay, downloadSize, failedAttempts) {
+    failedAttempts = failedAttempts === undefined ? 0 : failedAttempts
+
     let keys = Object.keys(this.peers)
     keys = keys.filter((key) => {
         const peer = this.getPeer(key)
@@ -202,6 +243,10 @@ module.exports = class Monitor {
             return true
         }
 
+        if (downloadSize && peer.downloadSize !== downloadSize) {
+          return true
+        }
+
         return false
     })
 
@@ -209,12 +254,15 @@ module.exports = class Monitor {
     const randomPeer = this.getPeer(random)
 
     if (!randomPeer) {
-      // logger.error(this.peers)
+      failedAttempts++
 
-      // FIXME: this method doesn't exist
-      // this.manager.checkOnline()
+      if (failedAttempts > 10) {
+        throw new Error('Failed to find random peer')
+      } else if (failedAttempts > 5) {
+        return this.getRandomPeer(null, downloadSize, failedAttempts)
+      }
 
-      return this.getRandomPeer()
+      return this.getRandomPeer(acceptableDelay, downloadSize, failedAttempts)
     }
 
     return randomPeer
@@ -224,30 +272,12 @@ module.exports = class Monitor {
    * Get a random, available peer which can be used for downloading blocks.
    * @return {Peer}
    */
-  getRandomDownloadBlocksPeer (minHeight) {
-    let keys = Object.keys(this.peers)
-    keys = keys.filter(key => {
-        const peer = this.getPeer(key)
-        if (peer.ban < new Date().getTime()) {
-            return true
-        }
+  async getRandomDownloadBlocksPeer (minHeight) {
+    const randomPeer = this.getRandomPeer(null, 100)
 
-        // if (peer.state.height > minHeight) {
-        //    return true
-        // }
-
-        if (peer.downloadSize !== 100) {
-            return true
-        }
-
-        return false
-    })
-
-    const random = keys[keys.length * Math.random() << 0]
-    const randomPeer = this.getPeer(random)
-
-    if (!randomPeer) {
-      return this.getRandomPeer()
+    const recentBlockIds = await this.__getRecentBlockIds()
+    if (!(await this.peerHasCommonBlocks(randomPeer, recentBlockIds))) {
+      return this.getRandomDownloadBlocksPeer(minHeight)
     }
 
     return randomPeer
@@ -262,7 +292,7 @@ module.exports = class Monitor {
       const list = await this.getRandomPeer().getPeers()
 
       list.forEach(peer => {
-        if (peer.status === 'OK' && !this.getPeer(peer.ip) && !isMyself(peer.ip)) {
+        if (peer.status === 'OK' && !this.getPeer(peer.ip) && !this.guard.isMyself(peer)) {
           this.peers[peer.ip] = new Peer(peer.ip, peer.port)
         }
       })
@@ -272,6 +302,15 @@ module.exports = class Monitor {
       return this.discoverPeers()
     }
   }
+
+  /**
+   * Check if we have any peers.
+   * @return {bool}
+   */
+  hasPeers () {
+    return !!this.getPeers().length
+  }
+
   /**
    * Get the median network height.
    * @return {Number}
@@ -311,8 +350,8 @@ module.exports = class Monitor {
       }
     }
 
-    console.log(heights)
     const pbft = allowedToForge / syncedPeers
+
     return isNaN(pbft) ? 0 : pbft
   }
 
@@ -330,9 +369,9 @@ module.exports = class Monitor {
    * @return {Object[]}
    */
   async downloadBlocks (fromBlockHeight) {
-    const randomPeer = this.getRandomDownloadBlocksPeer(fromBlockHeight)
-
     try {
+      const randomPeer = await this.getRandomDownloadBlocksPeer(fromBlockHeight)
+
       logger.info(`Downloading blocks from height ${fromBlockHeight.toLocaleString()} via ${randomPeer.ip}`)
 
       await randomPeer.ping()
@@ -342,7 +381,7 @@ module.exports = class Monitor {
 
       return blocks
     } catch (error) {
-      logger.error(`Block download: ${error.message}`)
+      logger.error(`Could not download blocks: ${error.message}`)
 
       return this.downloadBlocks(fromBlockHeight)
     }
@@ -407,43 +446,36 @@ module.exports = class Monitor {
   }
 
   /**
-   * Get a list of all suspended peers.
-   * @return {Object}
+   * Filter the initial seed list.
+   * @return {void}
    */
-  getSuspendedPeers () {
-    return this.suspendedPeers;
+  __filterPeers () {
+    if (!config.peers.list) {
+      logger.error('No seed peers defined in peers.json :interrobang:')
+
+      process.exit(1)
+    }
+
+    const filteredPeers = config.peers.list
+      .filter(peer => (!this.guard.isMyself(peer) || !this.guard.isValidPort(peer)))
+
+    // if (!filteredPeers.length) {
+    //   logger.error('No external peers found in peers.json :interrobang:')
+
+    //   process.exit(1)
+    // }
+
+    for (const peer of filteredPeers) {
+      this.peers[peer.ip] = new Peer(peer.ip, peer.port)
+    }
   }
 
   /**
-   * Determine if peer is suspended or not.
-   * @param  {Peer} peer
-   * @return {Boolean}
+   * Get last 10 block IDs from database.
+   * @return {[]String}
    */
-  __isSuspended (peer) {
-    const suspendedPeer = this.suspendedPeers[peer.ip]
-
-    if (suspendedPeer && moment().isBefore(suspendedPeer.until)) {
-      return true
-    } else if (suspendedPeer) {
-      delete this.suspendedPeers[peer.ip]
-    }
-
-    return false
-  }
-
-  /**
-   * Suspends a peer unless whitelisted
-   * @param {Peer} peer
-   */
-  __suspendPeer (peer) {
-    if (this.config.peers.whiteList && this.config.peers.whiteList.includes(peer.ip)) {
-      return
-    }
-
-    this.suspendedPeers[peer.ip] = {
-      peer: peer,
-      until: moment().add(1, 'hours')
-    }
+  async __getRecentBlockIds () {
+    return container.resolvePlugin('database').getRecentBlockIds()
   }
 
   /**
@@ -453,4 +485,36 @@ module.exports = class Monitor {
   __isColdStartActive () {
     return this.startForgers > moment()
   }
+
+  /**
+   * Check if the node can connect to any DNS host.
+   * @return {void}
+   */
+  async __checkDNSConnectivity (options) {
+    try {
+      const host = await checkDNS(options)
+
+      logger.info(`Your network connectivity has been verified by ${host}`)
+    } catch (error) {
+      logger.error(error.message)
+    }
+  }
+
+  /**
+   * Check if the node can connect to any NTP host.
+   * @return {void}
+   */
+  async __checkNTPConnectivity (options) {
+    try {
+      const { host, time } = await checkNTP(options)
+
+      logger.info(`Your NTP connectivity has been verified by ${host}`)
+
+      logger.info('Local clock is off by ' + parseInt(time.t) + 'ms from NTP :alarm_clock:')
+    } catch (error) {
+      logger.error(error.message)
+    }
+  }
 }
+
+module.exports = new Monitor()

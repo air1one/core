@@ -5,8 +5,8 @@
     "public": 46090600,
     "private": 46089520
   },
-  "pubKeyHash": 92,
-  "nethash": "264fa37c7da2764be7fe5f1097a79ceafe6d4c466aa3eb4b4ff4c8a3831983a5",
+  "pubKeyHash": 30,
+  "nethash": "2a44f340d76ffc3df204c5f38cd355b7496c9065a1ade2ef92071436bd72e867",
   "wif": 170,
   "client": {
     "token": "devnetv2",
@@ -48,7 +48,7 @@
       "delegateResignation": 500
     }
   }, {
-    "height": 10761,
+    "height": 10800,
     "reward": 200000000
   }],
   "exceptions": {

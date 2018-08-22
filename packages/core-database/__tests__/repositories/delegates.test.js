@@ -1,10 +1,9 @@
 'use strict'
 
 const app = require('../__support__/setup')
-const genesisBlock = require('../__fixtures__/genesisBlock')
-
 const { crypto } = require('@arkecosystem/crypto')
 
+let genesisBlock
 let repository
 let walletManager
 let calculateApproval
@@ -12,6 +11,10 @@ let calculateProductivity
 
 beforeAll(async (done) => {
   await app.setUp()
+
+  // Create the genesis block after the setup has finished or else it uses a potentially
+  // wrong network config.
+  genesisBlock = require('../__fixtures__/genesisBlock')
 
   const delegateCalculator = require('../../lib/repositories/utils/delegate-calculator')
   calculateApproval = delegateCalculator.calculateApproval
@@ -310,8 +313,8 @@ describe('Delegate Repository', () => {
 
       expect(results).toBeArray()
       expect(results[0].username).toBeString()
-      expect(results[0].approval).toBeNumber() // 0.18
-      expect(results[0].productivity).toBeNumber() // 98.97
+      expect(results[0].approval).toBeString() // '0.18'
+      expect(results[0].productivity).toBeString() // '98.97'
       expect(results[0].approval).toBe(calculateApproval(delegate, height))
       expect(results[0].productivity).toBe(calculateProductivity(delegate))
     })

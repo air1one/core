@@ -1,32 +1,25 @@
-const toHaveHeaders = require('./matchers/http/headers')
-expect.extend({ toHaveHeaders })
+const axios = require('axios')
+const MockAdapter = require('axios-mock-adapter')
+const mock = new MockAdapter(axios)
+
+const toHaveAtLeastHeaders = require('./matchers/http/headers')
+expect.extend({ toHaveAtLeastHeaders })
 
 const HttpClient = require('../lib/http')
 
+const host = 'http://example.net'
 let client
 
 beforeEach(() => {
-  client = new HttpClient('http://httpbin.org', 2)
+  client = new HttpClient(host, 2)
 })
 
 describe('API - HTTP Client', () => {
-  const headers = {
-    'API-version': 2,
-    Nethash: 'test nethash',
-    Port: '1',
-    Version: 'test version (pubKeyHash)'
-  }
+  let headers
 
   beforeEach(() => {
-    const { configManager } = require('@arkecosystem/crypto')
-    configManager.get = option => {
-      if (option === 'nethash') {
-        return headers.Nethash
-      } else if (option === 'pubKeyHash') {
-        return headers.Version
-      }
-
-      throw new Error(`Wrong option "${option}" to mock`)
+    headers = {
+      'API-Version': client.version
     }
   })
 
@@ -37,13 +30,13 @@ describe('API - HTTP Client', () => {
 
     describe('host', () => {
       it('should set the host', () => {
-        client = new HttpClient('http://ark.io')
-        expect(client.host).toBe('http://ark.io')
+        client = new HttpClient(host)
+        expect(client.host).toBe(host)
       })
 
       it('should remove the final slash of the host when necessary', () => {
-        client = new HttpClient('http://ark.io/')
-        expect(client.host).toBe('http://ark.io')
+        client = new HttpClient('http://example.net/')
+        expect(client.host).toBe('http://example.net')
       })
 
       it('should check that the host is not empty', () => {
@@ -53,84 +46,124 @@ describe('API - HTTP Client', () => {
 
     describe('API version parameter', () => {
       it('should set the API version', () => {
-        client = new HttpClient('http://example.net', 3)
+        client = new HttpClient(host, 3)
         expect(client.version).toBe(3)
       })
 
       it('should use 1 when is not present', () => {
-        client = new HttpClient('example.net')
+        client = new HttpClient(host)
         expect(client.version).toBe(1)
       })
     })
   })
 
+  describe('setTimeout', () => {
+    it('should set the timeout', () => {
+      expect(client.timeout).toBe(60000)
+      client.setTimeout(5000)
+      expect(client.timeout).toBe(5000)
+    })
+  })
+
+  describe('setHeaders', () => {
+    it('should set the headers', () => {
+      const newHeaders = {
+        'API-Version': 30,
+        other: 'value'
+      }
+      client.setHeaders(newHeaders)
+
+      expect(client.headers).toEqual(newHeaders)
+    })
+  })
+
   describe('get', () => {
-    it('should send GET requests', async () => {
-      const response = await client.get('get')
+    beforeEach(() => {
+      mock.onGet(`${host}/api/ENDPOINT`).reply(200, { data: [] })
+    })
+
+    it('should send GET requests to the API', async () => {
+      const response = await client.get('ENDPOINT')
 
       expect(response.status).toBe(200)
     })
 
     it('should use the necessary request headers', async () => {
-      const response = await client.get('get')
+      const response = await client.get('ENDPOINT')
 
-      expect(response).toHaveHeaders(headers)
+      expect(response.config).toHaveAtLeastHeaders(headers)
     })
   })
 
   describe('post', () => {
-    it('should send POST requests', async () => {
-      const response = await client.post('post')
+    beforeEach(() => {
+      mock.onPost(`${host}/api/ENDPOINT`).reply(200, { data: [] })
+    })
+
+    it('should send POST requests to the API', async () => {
+      const response = await client.post('ENDPOINT')
 
       expect(response.status).toBe(200)
     })
 
     it('should use the necessary request headers', async () => {
-      const response = await client.get('get')
+      const response = await client.post('ENDPOINT')
 
-      expect(response).toHaveHeaders(headers)
+      expect(response.config).toHaveAtLeastHeaders(headers)
     })
   })
 
   describe('put', () => {
-    it('should send PUT requests', async () => {
-      const response = await client.put('put')
+    beforeEach(() => {
+      mock.onPut(`${host}/api/ENDPOINT`).reply(200, { data: [] })
+    })
+
+    it('should send PUT requests to the API', async () => {
+      const response = await client.put('ENDPOINT')
 
       expect(response.status).toBe(200)
     })
 
     it('should use the necessary request headers', async () => {
-      const response = await client.get('get')
+      const response = await client.put('ENDPOINT')
 
-      expect(response).toHaveHeaders(headers)
+      expect(response.config).toHaveAtLeastHeaders(headers)
     })
   })
 
   describe('patch', () => {
-    it('should send PATCH requests', async () => {
-      const response = await client.patch('patch')
+    beforeEach(() => {
+      mock.onPatch(`${host}/api/ENDPOINT`).reply(200, { data: [] })
+    })
+
+    it('should send PATCH requests to the API', async () => {
+      const response = await client.patch('ENDPOINT')
 
       expect(response.status).toBe(200)
     })
 
     it('should use the necessary request headers', async () => {
-      const response = await client.get('get')
+      const response = await client.patch('ENDPOINT')
 
-      expect(response).toHaveHeaders(headers)
+      expect(response.config).toHaveAtLeastHeaders(headers)
     })
   })
 
   describe('delete', () => {
-    it('should send DELETE requests', async () => {
-      const response = await client.delete('delete')
+    beforeEach(() => {
+      mock.onDelete(`${host}/api/ENDPOINT`).reply(200, { data: [] })
+    })
+
+    it('should send DELETE requests to the API', async () => {
+      const response = await client.delete('ENDPOINT')
 
       expect(response.status).toBe(200)
     })
 
     it('should use the necessary request headers', async () => {
-      const response = await client.get('get')
+      const response = await client.delete('ENDPOINT')
 
-      expect(response).toHaveHeaders(headers)
+      expect(response.config).toHaveAtLeastHeaders(headers)
     })
   })
 })

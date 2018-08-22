@@ -2,6 +2,7 @@
 
 const container = require('@arkecosystem/core-container')
 const config = container.resolvePlugin('config')
+const emitter = container.resolvePlugin('event-emitter')
 const logger = container.resolvePlugin('logger')
 
 const { slots } = require('@arkecosystem/crypto')
@@ -38,12 +39,18 @@ blockchainMachine.state = state
  */
 blockchainMachine.actionMap = blockchain => {
   return {
-    blockchainReady: () => (state.started = true),
+    blockchainReady: () => {
+      if (!state.started) {
+        state.started = true
+        emitter.emit('state:started', true)
+      }
+    },
 
     async checkLater () {
-      await delay(60000)
-
-      return blockchain.dispatch('WAKEUP')
+      if (!blockchain.isStopped) {
+        await delay(60000)
+        return blockchain.dispatch('WAKEUP')
+      }
     },
 
     checkLastBlockSynced () {
@@ -130,6 +137,10 @@ blockchainMachine.actionMap = blockchain => {
     rebuildingComplete () {
       logger.info('Blockchain rebuild complete :unicorn_face:')
       blockchain.dispatch('REBUILDCOMPLETE')
+    },
+
+    stopped () {
+      logger.info('The blockchain has been stopped :guitar:')
     },
 
     exitApp () {
@@ -300,7 +311,7 @@ blockchainMachine.actionMap = blockchain => {
           logger.warn('Downloaded block not accepted: ' + JSON.stringify(blocks[0]))
           logger.warn('Last block: ' + JSON.stringify(lastBlock.data))
 
-          blockchain.p2p.banPeer(blocks[0].ip)
+          blockchain.p2p.suspendPeer(blocks[0].ip)
 
           // disregard the whole block list
           blockchain.dispatch('FORK')
@@ -326,6 +337,8 @@ blockchainMachine.actionMap = blockchain => {
       await blockchain.removeBlocks(random)
 
       logger.info(`Removed ${random} blocks :wastebasket:`)
+
+      await blockchain.p2p.resetSuspendedPeers()
 
       blockchain.dispatch('SUCCESS')
     }

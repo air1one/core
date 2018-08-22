@@ -67,7 +67,7 @@ module.exports = class WalletManager {
    * Update the vote balances and ranks of delegates.
    * @return {void}
    */
-  updateDelegates () {
+  async updateDelegates () {
     let delegates = this.getDelegates().map(delegate => {
       const voters = this
         .getLocalWallets()
@@ -239,6 +239,10 @@ module.exports = class WalletManager {
     }
 
     sender.applyTransactionToSender(data)
+
+    if (type === TRANSACTION_TYPES.DELEGATE_REGISTRATION) {
+      this.reindex(sender)
+    }
 
     if (recipient && type === TRANSACTION_TYPES.TRANSFER) {
       recipient.applyTransactionToRecipient(data)

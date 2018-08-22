@@ -1,14 +1,24 @@
 'use strict'
 
+const axios = require('axios')
+const MockAdapter = require('axios-mock-adapter')
+const axiosMock = new MockAdapter(axios)
 const app = require('./__support__/setup')
-const genesisBlock = require('./__fixtures__/genesisBlock')
-const genesisTransaction = require('./__fixtures__/genesisTransaction')
+
+let genesisBlock
+let genesisTransaction
 
 let Peer
 let peer
 
 beforeAll(async () => {
   await app.setUp()
+
+  // Create the genesis block after the setup has finished or else it uses a potentially
+  // wrong network config.
+  genesisBlock = require('./__fixtures__/genesisBlock')
+  genesisTransaction = require('./__fixtures__/genesisTransaction')
+
   Peer = require('../lib/peer')
 })
 
@@ -73,15 +83,30 @@ describe('Peer', () => {
   })
 
   describe('downloadBlocks', () => {
+    // https://github.com/facebook/jest/issues/3601
+    const errorCapturer = fn => fn.then(res => () => res).catch(err => () => { throw err })
+
     it('should be a function', () => {
       expect(peer.downloadBlocks).toBeFunction()
     })
 
-    it('should be ok', async () => {
-      const blocks = await peer.downloadBlocks(1)
+    describe('when the request reply with the blocks', () => {
+      it('should return the blocks', async () => {
+        const blocks = [{}]
+        axiosMock.onGet(`${peer.url}/peer/blocks`).reply(200, { blocks })
 
-      expect(blocks).toBeArray()
-      expect(blocks.length).toBeGreaterThan(10)
+        const result = await peer.downloadBlocks(1)
+
+        expect(result).toEqual(blocks)
+      })
+    })
+
+    describe('when the request reply with the blocks', () => {
+      it('should return the blocks', async () => {
+        axiosMock.onGet(`${peer.url}/peer/blocks`).reply(500, { data: {} })
+
+        expect(await errorCapturer(peer.downloadBlocks(1))).toThrowError(/request.*500/i)
+      })
     })
   })
 
@@ -99,7 +124,7 @@ describe('Peer', () => {
     })
 
     it('should not be ok', async () => {
-      expect(peer.ping(1)).rejects.toThrowError('is unreachable')
+      expect(await peer.ping(1)).toThrowError('is unreachable')
     })
   })
 
