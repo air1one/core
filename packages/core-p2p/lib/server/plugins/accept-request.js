@@ -2,6 +2,7 @@
 
 const requestIp = require('request-ip')
 const isWhitelist = require('../../utils/is-whitelist')
+const logger = require('@arkecosystem/core-container').resolvePlugin('logger')
 
 /**
  * The register method used by hapi.js.
@@ -16,7 +17,7 @@ const register = async (server, options) => {
     type: 'onRequest',
     async method (request, h) {
       const remoteAddress = requestIp.getClientIp(request)
-
+      logger.info(`[accept-request] Request from ${remoteAddress} for ${request.path}`)
       if (request.path.startsWith('/config')) {
         return h.continue
       }
@@ -29,13 +30,16 @@ const register = async (server, options) => {
       }
 
       if (request.path.startsWith('/peer')) {
+        logger.info(`[accept-request] Request from ${remoteAddress} : startsWith /peer`)
         const peer = { ip: remoteAddress }
 
         requiredHeaders.forEach(key => (peer[key] = request.headers[key]))
 
         try {
           await server.app.p2p.acceptNewPeer(peer)
+          logger.info(`[accept-request] Request from ${remoteAddress} : peer accepted`)
         } catch (error) {
+          logger.error(`[accept-request] Request from ${remoteAddress} : error ${error.message}`)
           return h.response({
             success: false,
             message: error.message
