@@ -1,4 +1,4 @@
 SELECT serialized,
        block_id
 FROM transactions
-WHERE id IN (${ids:list})
+WHERE id IN ($1)

@@ -22,7 +22,7 @@
     "depcheck": "depcheck ./ --ignores=commander"
   },
   "dependencies": {
-    "@arkecosystem/crypto": "^0.1.1",
+    "arkjs": "https://github.com/ArkEcosystem/ark-js#master",
     "bigi": "^1.4.2",
     "bip39": "^2.5.0",
     "bytebuffer": "^5.0.1",

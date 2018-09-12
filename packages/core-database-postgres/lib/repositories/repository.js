@@ -2,12 +2,9 @@ module.exports = class Repository {
   /**
    * Create a new repository instance.
    * @param  {Object} db
-   * @param  {Object} pgp
    */
-  constructor (db, pgp) {
+  constructor (db) {
     this.db = db
-    this.pgp = pgp
-    this.model = this.getModel()
   }
 
   /**
@@ -45,14 +42,6 @@ module.exports = class Repository {
   }
 
   /**
-   * Get the model related to this repository.
-   * @return {Object}
-   */
-  getModel () {
-    throw new Error('Method [getModel] not implemented!')
-  }
-
-  /**
    * Generate an "INSERT" query for the given data.
    * @param  {Array|Object} data
    * @return {String}
@@ -68,5 +57,13 @@ module.exports = class Repository {
    */
   __updateQuery (data) {
     return this.pgp.helpers.update(data, this.model.getColumnSet())
+  }
+
+  /**
+   * Get the PGP instance of the database connection.
+   * @return {Object}
+   */
+  get pgp () {
+    return this.db.$config.pgp
   }
 }

@@ -17,28 +17,13 @@ class BlocksRepository extends Repository {
    * @return {Object}
    */
   async findAll (parameters = {}) {
-    const selectQuery = this.query.select().from(this.query)
-    const countQuery = this._makeEstimateQuery()
+    const query = this.query.select().from(this.query)
 
-    const applyConditions = queries => {
-      const conditions = Object.entries(this._formatConditions(parameters))
-
-      if (conditions.length) {
-        const first = conditions.shift()
-
-        for (const item of queries) {
-          item.where(this.query[first[0]].equals(first[1]))
-
-          for (const condition of conditions) {
-            item.and(this.query[condition[0]].equals(condition[1]))
-          }
-        }
-      }
+    for (const [key, value] of super.__formatConditions(parameters)) {
+      query.where(this.query[key].equals(value))
     }
 
-    applyConditions([selectQuery, countQuery])
-
-    return this._findManyWithCount(selectQuery, countQuery, {
+    return this.__findManyWithCount(query, {
       limit: parameters.limit,
       offset: parameters.offset,
       orderBy: this.__orderBy(parameters)
@@ -66,7 +51,7 @@ class BlocksRepository extends Repository {
       .from(this.query)
       .where(this.query.id.equals(id))
 
-    return this._find(query)
+    return this.__find(query)
   }
 
   /**
@@ -82,7 +67,7 @@ class BlocksRepository extends Repository {
       .where(this.query.generator_public_key.equals(generatorPublicKey))
       .order(this.query.created_at.desc)
 
-    return this._find(query)
+    return this.__find(query)
   }
 
   /**
@@ -91,31 +76,18 @@ class BlocksRepository extends Repository {
    * @return {Object}
    */
   async search (parameters) {
-    const selectQuery = this.query.select().from(this.query)
-    const countQuery = this._makeEstimateQuery()
+    const query = this.query.select().from(this.query)
 
-    const applyConditions = queries => {
-      const conditions = buildFilterQuery(this._formatConditions(parameters), {
-        exact: ['id', 'version', 'previous_block', 'payload_hash', 'generator_public_key', 'block_signature'],
-        between: ['timestamp', 'height', 'number_of_transactions', 'total_amount', 'total_fee', 'reward', 'payload_length']
-      })
+    const conditions = buildFilterQuery(this.__formatConditions(parameters), {
+      exact: ['id', 'version', 'previous_block', 'payload_hash', 'generator_public_key', 'block_signature'],
+      between: ['timestamp', 'height', 'number_of_transactions', 'total_amount', 'total_fee', 'reward', 'payload_length']
+    })
 
-      if (conditions.length) {
-        const first = conditions.shift()
-
-        for (const item of queries) {
-          item.where(this.query[first.column][first.method](first.value))
-
-          for (const condition of conditions) {
-            item.and(this.query[condition.column][condition.method](condition.value))
-          }
-        }
-      }
+    for (const condition of conditions) {
+      query.where(this.query[condition.column][condition.method](condition.value))
     }
 
-    applyConditions([selectQuery, countQuery])
-
-    return this._findManyWithCount(selectQuery, countQuery, {
+    return this.__findManyWithCount(query, {
       limit: parameters.limit,
       offset: parameters.offset,
       orderBy: this.__orderBy(parameters)

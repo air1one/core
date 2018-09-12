@@ -1,6 +1,7 @@
 'use strict'
 
 const axios = require('axios')
+const map = require('lodash/map')
 const container = require('@arkecosystem/core-container')
 const logger = container.resolvePlugin('logger')
 const database = require('./database')
@@ -15,29 +16,29 @@ class WebhookManager {
   async setUp (config) {
     this.config = config
 
-    for (const event of container.resolvePlugin('blockchain').getEvents()) {
+    map(this.config.events, 'name').forEach(event => {
       emitter.on(event, async payload => {
         const webhooks = await database.findByEvent(event)
 
         for (const webhook of this.getMatchingWebhooks(webhooks, payload)) {
           try {
-            const response = await axios.post(webhook.target, {
+            const response = await axios.post(webhook.data.webhook.target, {
               timestamp: +new Date(),
-              data: payload,
-              event: webhook.event
+              data: webhook.data.payload,
+              event: webhook.data.webhook.event
             }, {
               headers: {
-                Authorization: webhook.token
+                Authorization: webhook.data.webhook.token
               }
             })
 
-            logger.debug(`Webhooks Job ${webhook.id} completed! Event [${webhook.event}] has been transmitted to [${webhook.target}] with a status of [${response.status}].`)
+            logger.debug(`Webhooks Job ${webhook.id} completed! Event [${webhook.data.webhook.event}] has been transmitted to [${webhook.data.webhook.target}] with a status of [${response.status}].`)
           } catch (error) {
             logger.error(`Webhooks Job ${webhook.id} failed: ${error.message}`)
           }
         }
       })
-    }
+    })
   }
 
   /**

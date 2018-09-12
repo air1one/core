@@ -1,7 +1,8 @@
 'use strict'
 
+const axios = require('axios')
+
 const app = require('../__support__/setup')
-const utils = require('../__support__/utils')
 
 let genesisBlock
 let genesisTransaction
@@ -19,10 +20,18 @@ afterAll(async () => {
   await app.tearDown()
 })
 
+const sendGET = async (endpoint, params = {}) => {
+  return axios.get(`http://127.0.0.1:4002/internal/${endpoint}`, { params })
+}
+
+const sendPOST = async (endpoint, params) => {
+  return axios.post(`http://127.0.0.1:4002/internal/${endpoint}`, params)
+}
+
 describe('API - Internal', () => {
   describe('GET /rounds/current', () => {
     it('should be ok', async () => {
-      const response = await utils.GET('internal/rounds/current')
+      const response = await sendGET('rounds/current')
 
       expect(response.status).toBe(200)
 
@@ -34,7 +43,7 @@ describe('API - Internal', () => {
 
   describe('POST /blocks', () => {
     it('should be ok', async () => {
-      const response = await utils.POST('internal/blocks', {
+      const response = await sendPOST('blocks', {
         block: genesisBlock.toBroadcastV1()
       })
 
@@ -44,7 +53,7 @@ describe('API - Internal', () => {
 
   describe.skip('POST /transactions/verify', () => {
     it('should be ok', async () => {
-      const response = await utils.POST('internal/transactions/verify', {
+      const response = await sendPOST('transactions/verify', {
         transaction: genesisTransaction
       })
 
@@ -58,7 +67,7 @@ describe('API - Internal', () => {
 
   describe('GET /transactions/forging', () => {
     it('should be ok', async () => {
-      const response = await utils.GET('internal/transactions/forging')
+      const response = await sendGET('transactions/forging')
 
       expect(response.status).toBe(200)
 
@@ -70,7 +79,7 @@ describe('API - Internal', () => {
 
   describe('GET /network/state', () => {
     it('should be ok', async () => {
-      const response = await utils.GET('internal/network/state')
+      const response = await sendGET('network/state')
 
       expect(response.status).toBe(200)
 

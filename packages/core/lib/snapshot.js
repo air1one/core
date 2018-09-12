@@ -15,7 +15,7 @@ module.exports = async (options) => {
       '@arkecosystem/core-logger',
       '@arkecosystem/core-logger-winston',
       '@arkecosystem/core-database',
-      '@arkecosystem/core-database-postgres',
+      '@arkecosystem/core-database-sequelize',
       '@arkecosystem/core-blockchain'
     ],
     options: {

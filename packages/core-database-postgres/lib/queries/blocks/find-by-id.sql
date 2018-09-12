@@ -1,3 +1,3 @@
 SELECT *
 FROM blocks
-WHERE id = ${id}
+WHERE id = $1

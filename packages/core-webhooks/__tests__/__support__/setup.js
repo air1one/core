@@ -15,6 +15,7 @@ exports.setUp = async () => {
     network: 'testnet'
   }, {
     exclude: [
+      '@arkecosystem/core-blockchain',
       '@arkecosystem/core-api',
       '@arkecosystem/core-graphql',
       '@arkecosystem/core-forger'

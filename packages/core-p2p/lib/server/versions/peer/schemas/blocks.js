@@ -24,7 +24,7 @@ exports.store = {
  * @type {Object}
  */
 exports.common = {
-  query: {
-    blocks: Joi.string()
+  payload: {
+    blocks: Joi.array().items(Joi.string())
   }
 }

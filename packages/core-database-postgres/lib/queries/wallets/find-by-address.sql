@@ -1,3 +1,3 @@
 SELECT *
 FROM wallets
-WHERE address = ${address}
+WHERE address = $1

@@ -1,10 +1,12 @@
 -- Table Definition
 CREATE TABLE IF NOT EXISTS ${schema~}.rounds (
-    "id" SERIAL PRIMARY KEY,
-    "public_key" VARCHAR(66) NOT NULL,
-    "balance" BIGINT NOT NULL,
-    "round" BIGINT NOT NULL,
-    "created_at" timestamptz DEFAULT now() NOT NULL
+    id SERIAL,
+    "public_key" VARCHAR(66),
+    "balance" BIGINT,
+    "round" BIGINT,
+    "created_at" timestamptz DEFAULT now(),
+    "updated_at" timestamptz DEFAULT now(),
+    PRIMARY KEY ("id")
 );
 
 -- Constraints

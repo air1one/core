@@ -17,7 +17,7 @@ module.exports = class WalletsRepository extends Repository {
    * @return {Promise}
    */
   async findByAddress (address) {
-    return this.db.oneOrNone(sql.findByAddress, { address })
+    return this.db.oneOrNone(sql.findByAddress, [address])
   }
 
   /**
@@ -37,7 +37,7 @@ module.exports = class WalletsRepository extends Repository {
    * Get the model related to this repository.
    * @return {Object}
    */
-  getModel () {
-    return new Wallet(this.pgp)
+  get model () {
+    return new Wallet(this.db.$config.pgp)
   }
 }

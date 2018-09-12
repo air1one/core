@@ -1,5 +1,5 @@
 const bip39 = require('bip39')
-const { crypto } = require('@arkecosystem/crypto')
+const { crypto } = require('arkjs')
 
 module.exports = (quantity = 1) => {
   let wallets = []

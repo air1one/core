@@ -9,7 +9,7 @@ const { Transaction } = require('@arkecosystem/crypto').models
 const transactionPool = container.resolvePlugin('transactionPool')
 const logger = container.resolvePlugin('logger')
 
-const schema = require('../schemas/transactions')
+const schema = require('../schemas/blocks')
 
 /**
  * @type {Object}

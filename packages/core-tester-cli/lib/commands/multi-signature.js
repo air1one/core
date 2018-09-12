@@ -1,6 +1,6 @@
 'use strict'
 
-const { client } = require('@arkecosystem/crypto')
+const ark = require('arkjs')
 const delay = require('delay')
 const utils = require('../utils')
 const logger = utils.logger
@@ -22,24 +22,26 @@ module.exports = async (options) => {
   const multiSignatureWallets = utils.generateWallets(options.number)
   await transferCommand(options, multiSignatureWallets, (publicKeys.length * 5) + 10, true)
 
-  const builder = client.getBuilder().multiSignature()
-  const transactions = []
+  let transactions = []
   multiSignatureWallets.forEach((wallet, i) => {
-    builder
-      .fee(options.multisigFee)
-      .multiSignatureAsset({
-        lifetime: options.lifetime,
-        keysgroup: publicKeys,
-        min: min
-      })
-      .sign(wallet.passphrase)
-
+    const transaction = ark.multisignature.createMultisignature(
+      wallet.passphrase,
+      null,
+      publicKeys,
+      options.lifetime,
+      min,
+      options.multisigFee
+    )
+    transaction.signatures = []
     for (let i = approvalWallets.length - 1; i >= 0; i--) {
-      builder.multiSignatureSign(approvalWallets[i].passphrase)
+      const approverSignature = ark.multisignature.signTransaction(
+        transaction,
+        approvalWallets[i].passphrase
+      )
+      transaction.signatures.push(approverSignature)
     }
-
-    const transaction = builder.build()
     transactions.push(transaction)
+
     logger.info(`${i} ==> ${transaction.id}, ${wallet.address}`)
   })
 
@@ -92,21 +94,24 @@ module.exports = async (options) => {
 async function __testSendWithSignatures (multiSignatureWallets, approvalWallets) {
   logger.info('Sending transactions with signatures')
 
-  const builder = client.getBuilder().transfer()
   const transactions = []
   multiSignatureWallets.forEach((wallet, i) => {
-    builder
-      .recipientId(wallet.address)
-      .amount(2)
-      .vendorField(`TID - with sigs: ${i}`)
-      .sign(wallet.passphrase)
-
+    const transaction = ark.transaction.createTransaction(
+      wallet.address,
+      2,
+      `TID - with sigs: ${i}`,
+      wallet.passphrase
+    )
+    transaction.signatures = []
     for (let j = approvalWallets.length - 1; j >= 0; j--) {
-      builder.multiSignatureSign(approvalWallets[j].passphrase)
+      const approverSignature = ark.multisignature.signTransaction(
+        transaction,
+        approvalWallets[j].passphrase
+      )
+      transaction.signatures.push(approverSignature)
     }
-
-    const transaction = builder.build()
     transactions.push(transaction)
+
     logger.info(`${i} ==> ${transaction.id}, ${wallet.address}`)
   })
 
@@ -136,24 +141,27 @@ async function __testSendWithSignatures (multiSignatureWallets, approvalWallets)
 async function __testSendWithMinSignatures (multiSignatureWallets, approvalWallets, min) {
   logger.info(`Sending transactions with ${min} (min) of ${approvalWallets.length} signatures`)
 
-  const builder = client.getBuilder().transfer()
   const transactions = []
   multiSignatureWallets.forEach((wallet, i) => {
-    builder
-      .recipientId(wallet.address)
-      .amount(2)
-      .vendorField(`TID - with ${min} sigs: ${i}`)
-      .sign(wallet.passphrase)
-
+    const transaction = ark.transaction.createTransaction(
+      wallet.address,
+      2,
+      `TID - with ${min} sigs: ${i}`,
+      wallet.passphrase
+    )
+    transaction.signatures = []
     for (let j = approvalWallets.length - 1; j >= 0; j--) {
-      builder.multiSignatureSign(approvalWallets[j].passphrase)
-      if (builder.data.signatures.length === min) {
+      const approverSignature = ark.multisignature.signTransaction(
+        transaction,
+        approvalWallets[j].passphrase
+      )
+      transaction.signatures.push(approverSignature)
+      if (transaction.signatures.length === min) {
         break
       }
     }
-
-    const transaction = builder.build()
     transactions.push(transaction)
+
     logger.info(`${i} ==> ${transaction.id}, ${wallet.address}`)
   })
 
@@ -184,24 +192,27 @@ async function __testSendWithBelowMinSignatures (multiSignatureWallets, approval
   const max = min - 1
   logger.info(`Sending transactions with ${max} (below min) of ${approvalWallets.length} signatures`)
 
-  const builder = client.getBuilder().transfer()
   const transactions = []
   multiSignatureWallets.forEach((wallet, i) => {
-    builder
-      .recipientId(wallet.address)
-      .amount(2)
-      .vendorField(`TID - with ${max} sigs: ${i}`)
-      .sign(wallet.passphrase)
-
+    const transaction = ark.transaction.createTransaction(
+      wallet.address,
+      2,
+      `TID - with ${max} sigs: ${i}`,
+      wallet.passphrase
+    )
+    transaction.signatures = []
     for (let j = approvalWallets.length - 1; j >= 0; j--) {
-      builder.multiSignatureSign(approvalWallets[j].passphrase)
-      if (builder.data.signatures.length === max) {
+      const approverSignature = ark.multisignature.signTransaction(
+        transaction,
+        approvalWallets[j].passphrase
+      )
+      transaction.signatures.push(approverSignature)
+      if (transaction.signatures.length === max) {
         break
       }
     }
-
-    const transaction = builder.build()
     transactions.push(transaction)
+
     logger.info(`${i} ==> ${transaction.id}, ${wallet.address}`)
   })
 
@@ -235,17 +246,16 @@ async function __testSendWithBelowMinSignatures (multiSignatureWallets, approval
 async function __testSendWithoutSignatures (multiSignatureWallets) {
   logger.info('Sending transactions without signatures')
 
-  const builder = client.getBuilder().transfer()
   const transactions = []
   multiSignatureWallets.forEach((wallet, i) => {
-    const transaction = builder
-      .recipientId(wallet.address)
-      .amount(2)
-      .vendorField(`TID - without sigs: ${i}`)
-      .sign(wallet.passphrase)
-      .build()
-
+    const transaction = ark.transaction.createTransaction(
+      wallet.address,
+      2,
+      `TID - without sigs: ${i}`,
+      wallet.passphrase
+    )
     transactions.push(transaction)
+
     logger.info(`${i} ==> ${transaction.id}, ${wallet.address}`)
   })
 
@@ -279,18 +289,17 @@ async function __testSendWithoutSignatures (multiSignatureWallets) {
 async function __testSendWithEmptySignatures (multiSignatureWallets) {
   logger.info('Sending transactions with empty signatures')
 
-  const builder = client.getBuilder().transfer()
   const transactions = []
   multiSignatureWallets.forEach((wallet, i) => {
-    const transaction = builder
-      .recipientId(wallet.address)
-      .amount(2)
-      .vendorField(`TID - without sigs: ${i}`)
-      .sign(wallet.passphrase)
-      .build()
-
-    transaction.data.signatures = []
+    const transaction = ark.transaction.createTransaction(
+      wallet.address,
+      2,
+      `TID - without sigs: ${i}`,
+      wallet.passphrase
+    )
+    transaction.signatures = []
     transactions.push(transaction)
+
     logger.info(`${i} ==> ${transaction.id}, ${wallet.address}`)
   })
 
@@ -324,28 +333,30 @@ async function __testSendWithEmptySignatures (multiSignatureWallets) {
 async function __testNewMultiSignatureRegistration (multiSignatureWallets, options) {
   logger.info('Sending transactions to re-register multi-signature')
 
-  const builder = client.getBuilder().multiSignature()
   const transactions = []
   const approvalWallets = utils.generateWallets(options.quantity)
   const publicKeys = approvalWallets.map(wallet => `+${wallet.keys.publicKey}`)
   const min = options.min ? Math.min(options.min, publicKeys.length) : publicKeys.length
 
   multiSignatureWallets.forEach((wallet, i) => {
-    builder
-      .fee(options.multisigFee)
-      .multiSignatureAsset({
-        lifetime: options.lifetime,
-        keysgroup: publicKeys,
-        min: min
-      })
-      .sign(wallet.passphrase)
-
+    const transaction = ark.multisignature.createMultisignature(
+      wallet.passphrase,
+      null,
+      publicKeys,
+      options.lifetime,
+      min,
+      options.multisigFee
+    )
+    transaction.signatures = []
     for (let i = approvalWallets.length - 1; i >= 0; i--) {
-      builder.multiSignatureSign(approvalWallets[i].passphrase)
+      const approverSignature = ark.multisignature.signTransaction(
+        transaction,
+        approvalWallets[i].passphrase
+      )
+      transaction.signatures.push(approverSignature)
     }
-
-    const transaction = builder.build()
     transactions.push(transaction)
+
     logger.info(`${i} ==> ${transaction.id}, ${wallet.address}`)
   })
 

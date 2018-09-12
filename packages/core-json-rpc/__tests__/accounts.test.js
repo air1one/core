@@ -1,5 +1,5 @@
 const request = require('./__support__/request')
-const { crypto } = require('@arkecosystem/crypto')
+const arkjs = require('arkjs')
 
 const app = require('./__support__/setup')
 
@@ -115,7 +115,7 @@ describe('Accounts', () => {
       })
 
       await expect(response.data.result.recipientId).toBe('AUDud8tvyVZa67p3QY7XPRUTjRGnWQQ9Xv')
-      await expect(crypto.verify(response.data.result)).toBeTruthy()
+      await expect(arkjs.crypto.verify(response.data.result)).toBeTruthy()
     })
   })
 })

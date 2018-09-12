@@ -9,7 +9,7 @@ module.exports = class BlocksRepository extends Repository {
    * @return {Promise}
    */
   async findById (id) {
-    return this.db.one(sql.findById, { id })
+    return this.db.one(sql.findById, [id])
   }
 
   /**
@@ -26,7 +26,7 @@ module.exports = class BlocksRepository extends Repository {
    * @return {Promise}
    */
   async common (ids) {
-    return this.db.manyOrNone(sql.common, { ids })
+    return this.db.manyOrNone(sql.common, [ids.join(',')])
   }
 
   /**
@@ -36,7 +36,7 @@ module.exports = class BlocksRepository extends Repository {
    * @return {Promise}
    */
   async headers (start, end) {
-    return this.db.many(sql.headers, { start, end })
+    return this.db.many(sql.headers, [start, end])
   }
 
   /**
@@ -46,7 +46,7 @@ module.exports = class BlocksRepository extends Repository {
    * @return {Promise}
    */
   async heightRange (start, end) {
-    return this.db.many(sql.heightRange, { start, end })
+    return this.db.many(sql.heightRange, [start, end])
   }
 
   /**
@@ -79,14 +79,14 @@ module.exports = class BlocksRepository extends Repository {
    * @return {Promise}
    */
   async delete (id) {
-    return this.db.none(sql.delete, { id })
+    return this.db.none(sql.delete, [id])
   }
 
   /**
    * Get the model related to this repository.
    * @return {Object}
    */
-  getModel () {
-    return new Block(this.pgp)
+  get model () {
+    return new Block(this.db.$config.pgp)
   }
 }

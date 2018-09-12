@@ -114,9 +114,7 @@ describe('Guard', () => {
 
     it('should return a 6 hours suspension for "Invalid Version"', () => {
       const { until, reason } = guard.__determineOffence({
-        version: '1.0.0',
-        status: 200,
-        delay: 1000
+        version: '1.0.0'
       })
 
       expect(convertToMinutes(until)).toBe(360)

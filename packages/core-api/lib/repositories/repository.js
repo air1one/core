@@ -10,42 +10,37 @@ module.exports = class Repository {
     this.query = this.model.query()
   }
 
-  async _find (query) {
+  async __find (query) {
     return database.query.oneOrNone(query.toQuery())
   }
 
-  async _findMany (query) {
+  async __findMany (query) {
     return database.query.manyOrNone(query.toQuery())
   }
 
-  async _findManyWithCount (selectQuery, countQuery, { limit, offset, orderBy }) {
-    const { count } = await this._find(countQuery)
+  async __findManyWithCount (query, { limit, offset, orderBy }) {
+    // FIX: estimate query issue with WHERE conditions
+    const count = 0 // await this.__estimate(query)
 
-    selectQuery
+    query
       .order(this.query[orderBy[0]][orderBy[1]])
       .offset(offset)
       .limit(limit)
 
     return {
-      rows: await this._findMany(selectQuery),
-      count: +count
+      rows: await this.__findMany(query),
+      count
     }
   }
 
-  _makeCountQuery () {
-    return this.query
-      .select('count(*) AS count')
-      .from(this.query)
+  async __estimate (query) {
+    const { countEstimate } = await database.query.one(`SELECT count_estimate ('${query.toQuery().text}');`)
+
+    return countEstimate
   }
 
-  _makeEstimateQuery () {
-    return this.query
-      .select('count(*) AS count')
-      .from(`${this.model.getTable()} TABLESAMPLE SYSTEM (100)`)
-  }
-
-  _formatConditions (parameters) {
-    const columns = this.model.getColumnSet().columns.map(column => ({
+  __formatConditions (params) {
+    const columns = database.models.transaction.getColumnSet().columns.map(column => ({
       name: column.name,
       prop: column.prop || column.name
     }))
@@ -57,12 +52,14 @@ module.exports = class Repository {
       return columnNames.includes(arg) || columnProps.includes(arg)
     })
 
-    return filter(Object.keys(parameters)).reduce((items, item) => {
+    const conditions = filter(Object.keys(params)).reduce((items, item) => {
       const columnName = columns.find(column => (column.prop === item)).name
 
-      items[columnName] = parameters[item]
+      items[columnName] = params[item]
 
       return items
     }, {})
+
+    return Object.entries(conditions)
   }
 }

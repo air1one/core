@@ -47,7 +47,7 @@ function generateWallets () {
       vote: `vote-${address}`,
       username: `username-${address}`,
       balance: 100,
-      voteBalance: 200
+      votebalance: 200
     }
   })
 }

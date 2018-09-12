@@ -88,9 +88,7 @@ module.exports = class SPV {
    * @return {void}
    */
   async __buildLastForgedBlocks () {
-    const transactions = await this.query.many(queries.spv.lastForgedBlocks, {
-      limit: this.activeDelegates
-    })
+    const transactions = await this.query.many(queries.spv.lastForgedBlocks, [this.activeDelegates])
 
     for (const transaction of transactions) {
       const wallet = this.walletManager.findByPublicKey(transaction.generatorPublicKey)
@@ -144,13 +142,13 @@ module.exports = class SPV {
     }
 
     // Map public keys
-    const publicKeys = transactions.map(transaction => transaction.senderPublicKey)
+    const publicKeys = transactions.map(transaction => transaction.senderPublicKey).join(',')
 
     // Forged Blocks...
-    const forgedBlocks = await this.query.manyOrNone(queries.spv.delegatesForgedBlocks, { publicKeys })
+    const forgedBlocks = await this.query.manyOrNone(queries.spv.delegatesForgedBlocks, [publicKeys])
 
     // Ranks...
-    const delegates = await this.query.manyOrNone(queries.spv.delegatesRanks, { publicKeys })
+    const delegates = await this.query.manyOrNone(queries.spv.delegatesRanks, [publicKeys])
 
     for (let i = 0; i < delegates.length; i++) {
       const forgedBlock = forgedBlocks.filter(block => {
@@ -158,8 +156,8 @@ module.exports = class SPV {
       })[0]
 
       const wallet = this.walletManager.findByPublicKey(delegates[i].publicKey)
-      wallet.voteBalance = delegates[i].voteBalance
-      wallet.missedBlocks = parseInt(delegates[i].missedBlocks)
+      wallet.votebalance = delegates[i].votebalance
+      wallet.missedBlocks = parseInt(delegates[i].missed_blocks)
 
       if (forgedBlock) {
         wallet.forgedFees = +forgedBlock.totalFees

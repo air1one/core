@@ -1,6 +1,6 @@
 'use strict'
 
-const { client } = require('@arkecosystem/crypto')
+const ark = require('arkjs')
 const delay = require('delay')
 const sample = require('lodash/sample')
 const utils = require('../utils')
@@ -27,16 +27,14 @@ module.exports = async (options) => {
 
   logger.info(`Sending ${options.quantity} vote transactions`)
 
-  const builder = client.getBuilder().vote()
   const transactions = []
   wallets.forEach((wallet, i) => {
-    const transaction = builder
-      .fee(utils.parseFee(options.voteFee))
-      .votesAsset([`+${options.delegate}`])
-      .sign(wallet.passphrase)
-      .secondSign(config.secondPassphrase)
-      .build()
-
+    const transaction = ark.vote.createVote(
+      wallet.passphrase,
+      [`+${options.delegate}`],
+      config.secondPassphrase,
+      utils.parseFee(options.voteFee)
+    )
     transactions.push(transaction)
 
     logger.info(`${i} ==> ${transaction.id}, ${wallet.address} (fee: ${transaction.fee})`)

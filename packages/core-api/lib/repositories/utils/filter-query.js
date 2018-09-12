@@ -2,20 +2,20 @@
 
 /**
  * Create a "where" object for a sequelize query.
- * @param  {Object} parameters
+ * @param  {Object} params
  * @param  {Object} filters
  * @return {Object}
  */
-module.exports = (parameters, filters) => {
+module.exports = (params, filters) => {
   let where = []
 
   if (filters.hasOwnProperty('exact')) {
     for (const elem of filters['exact']) {
-      if (typeof parameters[elem] !== 'undefined') {
+      if (typeof params[elem] !== 'undefined') {
         where.push({
           column: elem,
           method: 'equals',
-          value: parameters[elem]
+          value: params[elem]
         })
       }
     }
@@ -23,34 +23,34 @@ module.exports = (parameters, filters) => {
 
   if (filters.hasOwnProperty('between')) {
     for (const elem of filters['between']) {
-      if (!parameters[elem]) {
+      if (!params[elem]) {
         continue
       }
 
-      if (!parameters[elem].hasOwnProperty('from') && !parameters[elem].hasOwnProperty('to')) {
+      if (!params[elem].hasOwnProperty('from') && !params[elem].hasOwnProperty('to')) {
         where.push({
           column: elem,
           method: 'equals',
-          value: parameters[elem]
+          value: params[elem]
         })
       }
 
-      if (parameters[elem].hasOwnProperty('from') || parameters[elem].hasOwnProperty('to')) {
+      if (params[elem].hasOwnProperty('from') || params[elem].hasOwnProperty('to')) {
         where[elem] = {}
 
-        if (parameters[elem].hasOwnProperty('from')) {
+        if (params[elem].hasOwnProperty('from')) {
           where.push({
             column: elem,
             method: 'gte',
-            value: parameters[elem].from
+            value: params[elem].from
           })
         }
 
-        if (parameters[elem].hasOwnProperty('to')) {
+        if (params[elem].hasOwnProperty('to')) {
           where.push({
             column: elem,
             method: 'lte',
-            value: parameters[elem].to
+            value: params[elem].to
           })
         }
       }
@@ -59,11 +59,11 @@ module.exports = (parameters, filters) => {
 
   if (filters.hasOwnProperty('wildcard')) {
     for (const elem of filters['wildcard']) {
-      if (parameters[elem]) {
+      if (params[elem]) {
         where.push({
           column: elem,
           method: 'like',
-          value: `%${parameters[elem]}%`
+          value: `%${params[elem]}%`
         })
       }
     }

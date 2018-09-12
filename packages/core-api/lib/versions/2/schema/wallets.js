@@ -74,7 +74,7 @@ exports.search = {
       from: Joi.number().integer(),
       to: Joi.number().integer()
     }),
-    voteBalance: Joi.object().keys({
+    votebalance: Joi.object().keys({
       from: Joi.number().integer(),
       to: Joi.number().integer()
     })

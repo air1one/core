@@ -1,18 +1,20 @@
 -- Table Definition
 CREATE TABLE IF NOT EXISTS ${schema~}.transactions (
-    "id" VARCHAR(64) PRIMARY KEY,
-    "version" SMALLINT NOT NULL,
-    "block_id" VARCHAR(64) NOT NULL,
-    "sequence" SMALLINT NOT NULL,
-    "timestamp" INTEGER NOT NULL,
-    "sender_public_key" VARCHAR(66) NOT NULL,
+    "id" VARCHAR(64),
+    "version" SMALLINT,
+    "block_id" VARCHAR(64),
+    "sequence" SMALLINT,
+    "timestamp" INTEGER,
+    "sender_public_key" VARCHAR(66),
     "recipient_id" VARCHAR(36),
-    "type" SMALLINT NOT NULL,
+    "type" SMALLINT,
     "vendor_field_hex" bytea,
-    "amount" BIGINT NOT NULL,
-    "fee" BIGINT NOT NULL,
-    "serialized" bytea NOT NULL,
-    "created_at" timestamptz DEFAULT now() NOT NULL
+    "amount" BIGINT,
+    "fee" BIGINT,
+    "serialized" bytea,
+    "created_at" timestamptz DEFAULT now(),
+    "updated_at" timestamptz DEFAULT now(),
+    PRIMARY KEY ("id")
 );
 
 -- Constraints

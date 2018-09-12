@@ -28,7 +28,7 @@ module.exports = {
       vote: Sequelize.STRING(66),
       username: Sequelize.STRING(64),
       balance: Sequelize.BIGINT,
-      voteBalance: Sequelize.BIGINT,
+      votebalance: Sequelize.BIGINT,
       producedBlocks: Sequelize.BIGINT,
       missedBlocks: Sequelize.BIGINT,
       createdAt: {
