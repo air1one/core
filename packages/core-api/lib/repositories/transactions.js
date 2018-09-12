@@ -32,8 +32,16 @@ class TransactionsRepository extends Repository {
       parameters.senderPublicKey = senderPublicKey
     }
 
-    for (const [key, value] of super.__formatConditions(parameters)) {
-      query.where(this.query[key].equals(value))
+    const conditions = Object.entries(this.__formatConditions(parameters))
+
+    if (conditions.length) {
+      const first = conditions.shift()
+
+      query.where(this.query[first[0]].equals(first[1]))
+
+      for (const condition of conditions) {
+        query.and(this.query[condition[0]].equals(condition[1]))
+      }
     }
 
     return this.__findManyWithCount(query, {
@@ -57,12 +65,12 @@ class TransactionsRepository extends Repository {
       parameters.senderPublicKey = this.__publicKeyFromSenderId(parameters.senderId)
     }
 
-    const conditions = super.__formatConditions(parameters)
+    const conditions = Object.entries(this.__formatConditions(parameters))
 
     if (conditions.length) {
       const first = conditions.shift()
 
-      this.query[first[0]].equals(first[0])
+      query.where(this.query[first[0]].equals(first[1]))
 
       for (const [key, value] of conditions) {
         query.or(this.query[key].equals(value))
@@ -257,8 +265,14 @@ class TransactionsRepository extends Repository {
       wildcard: ['vendor_field_hex']
     })
 
-    for (const condition of conditions) {
-      query.where(this.query[condition.column][condition.method](condition.value))
+    if (conditions.length) {
+      const first = conditions.shift()
+
+      query.where(this.query[first.column][first.method](first.value))
+
+      for (const condition of conditions) {
+        query.and(this.query[condition.column][condition.method](condition.value))
+      }
     }
 
     // rows = await this.__mapBlocksToTransactions(transactions)
