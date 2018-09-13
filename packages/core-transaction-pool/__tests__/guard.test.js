@@ -150,6 +150,12 @@ describe('Transaction Guard', () => {
     })
   })
 
+  describe('__determineFeeMatchingTransactions', () => {
+    it('should be a function', () => {
+      expect(guard.__determineFeeMatchingTransactions).toBeFunction()
+    })
+  })
+
   describe('__determineExcessTransactions', () => {
     it('should be a function', () => {
       expect(guard.__determineExcessTransactions).toBeFunction()

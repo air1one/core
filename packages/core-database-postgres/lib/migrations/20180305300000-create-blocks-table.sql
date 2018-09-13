@@ -2,9 +2,9 @@
 CREATE TABLE IF NOT EXISTS ${schema~}.blocks (
     "id" VARCHAR(64) UNIQUE,
     "version" SMALLINT,
-    "timestamp" INTEGER UNIQUE,
-    "previous_block" VARCHAR(64) UNIQUE,
-    "height" INTEGER UNIQUE,
+    "timestamp" INTEGER,
+    "previous_block" VARCHAR(64),
+    "height" INTEGER,
     "number_of_transactions" INTEGER,
     "total_amount" BIGINT,
     "total_fee" BIGINT,
