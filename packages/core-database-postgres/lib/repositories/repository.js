@@ -1,72 +1,69 @@
-'use strict'
-
-const invertBy = require('lodash/invertBy')
-
-const defaults = {
-  limit: 100,
-  offset: 0
-}
-
 module.exports = class Repository {
   /**
    * Create a new repository instance.
-   * @param  {ConnectionInterface} connection
+   * @param  {Object} db
    */
-  constructor (connection) {
-    this.connection = connection
-    this.query = connection.query
-}
-
-  /**
-   * Executes the query. It admits some parameters to sort the results and to
-   * reduce their number.
-   *
-   * @param {QueryBuilder} query - The query to execute
-   * @param {Object} params
-   * @param {Number} [params.limit] - Limit the results to this number of rows
-   * @param {Number} [params.offset] - Use this number as the offset
-   * @param {Array} params.orderBy - Sort the results by this field, ASC or DESC
-   */
-  async __runQuery (query, { limit, offset, orderBy }) {
-    return query
-      .limit(limit || defaults.limit)
-      .offset(offset || defaults.offset)
-      .orderBy(orderBy[0], orderBy[1])
-      .all()
+  constructor (db) {
+    this.db = db
   }
 
   /**
-   * Count all the records of a table.
-   * @return {Number}
+   * Estimate the number of records in the table.
+   * @return {Promise}
    */
-  async __count (table) {
-    return this
-      .query
-      .select()
-      .countDistinct('id', 'count')
-      .from(table)
-      .first()
+  async estimate () {
+    return this.db.one(`SELECT count_estimate('SELECT * FROM ${this.model.getTable()})`)
   }
 
-  __formatConditions (params) {
-    const { fieldAttributeMap, tableAttributes } = this.model
+  /**
+   * Run a truncate statement on the table.
+   * @return {Promise}
+   */
+  async truncate () {
+    return this.db.none(`TRUNCATE ${this.model.getTable()} RESTART IDENTITY`)
+  }
 
-    const validParams = Object.keys(tableAttributes)
-    const filter = args => {
-      return args.filter(elem => validParams.includes(elem))
-    }
+  /**
+   * Create one or many instances of the related models.
+   * @param  {Array|Object} item
+   * @return {Promise}
+   */
+  async create (item) {
+    return this.db.none(this.__insertQuery(item))
+  }
 
-    // invert direction of mapping, camelCase => snake_case
-    // the mapping is necessary if a param is camelCase otherwise
-    // the param can be directly used.
-    // e.g. recipientId => recipient_id, but type => type
-    const fieldMappings = invertBy(fieldAttributeMap)
-    const conditions = filter(Object.keys(params)).reduce((all, column) => {
-      const columnName = fieldMappings[column] || column
-      all[columnName] = params[column]
-      return all
-    }, {})
+  /**
+   * Update one or many instances of the related models.
+   * @param  {Array|Object} item
+   * @return {Promise}
+   */
+  async update (item) {
+    return this.db.none(this.__updateQuery(item))
+  }
 
-    return { conditions, filter }
+  /**
+   * Generate an "INSERT" query for the given data.
+   * @param  {Array|Object} data
+   * @return {String}
+   */
+  __insertQuery (data) {
+    return this.pgp.helpers.insert(data, this.model.getColumnSet())
+  }
+
+  /**
+   * Generate an "UPDATE" query for the given data.
+   * @param  {Array|Object} data
+   * @return {String}
+   */
+  __updateQuery (data) {
+    return this.pgp.helpers.update(data, this.model.getColumnSet())
+  }
+
+  /**
+   * Get the PGP instance of the database connection.
+   * @return {Object}
+   */
+  get pgp () {
+    return this.db.$config.pgp
   }
 }
