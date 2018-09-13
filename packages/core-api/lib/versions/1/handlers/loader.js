@@ -4,7 +4,6 @@ const container = require('@arkecosystem/core-container')
 const config = container.resolvePlugin('config')
 const blockchain = container.resolvePlugin('blockchain')
 const utils = require('../utils')
-const { transactions } = require('../../../repositories')
 
 /**
  * @type {Object}
@@ -53,8 +52,7 @@ exports.autoconfigure = {
    * @return {Hapi.Response}
    */
   async handler (request, h) {
-    const feeStatisticsData = await transactions.getFeeStatistics()
-
+    const feeStatisticsData = await blockchain.database.transactions.getFeeStatistics()
     return utils.respondWith({
       network: {
         nethash: config.network.nethash,

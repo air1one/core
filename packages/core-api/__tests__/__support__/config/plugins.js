@@ -5,7 +5,10 @@ module.exports = {
   '@arkecosystem/core-logger': {},
   '@arkecosystem/core-logger-winston': {},
   '@arkecosystem/core-database': {},
-  '@arkecosystem/core-database-postgres': {},
+  '@arkecosystem/core-database-sequelize': {
+    dialect: 'sqlite',
+    storage: ':memory:'
+  },
   '@arkecosystem/core-transaction-pool': {},
   '@arkecosystem/core-transaction-pool-redis': {},
   '@arkecosystem/core-p2p': {},

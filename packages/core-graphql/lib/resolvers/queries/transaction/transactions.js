@@ -17,7 +17,7 @@ module.exports = async (root, args) => {
     params.type = constants.TRANSACTION_TYPES[params.type]
   }
 
-  const result = await database.transactions.findAll({ ...filter, orderBy: order, ...params }, false)
-  const transactions = result ? result.rows : []
+  const transactions = await database.transactions.findAll({ ...filter, orderBy: order, ...params }, false)
+
   return unserializeTransactions(transactions)
 }

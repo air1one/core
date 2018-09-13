@@ -29,9 +29,8 @@ module.exports = {
       ...walletOr,
       ...params
     }, false)
-    const rows = result ? result.rows : []
 
-    return unserializeTransactions(rows)
+    return unserializeTransactions(result)
   },
 
   /*
@@ -45,11 +44,9 @@ module.exports = {
 
     params.generatorPublickKey = wallet.publicKey
 
-    const result = database.blocks.findAll({
+    return database.blocks.findAll({
       orderBy: formatOrderBy(orderBy, 'height:DESC'),
       ...params
     }, false)
-    const rows = result ? result.rows : []
-    return rows
   }
 }

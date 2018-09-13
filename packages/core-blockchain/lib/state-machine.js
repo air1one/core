@@ -150,6 +150,8 @@ blockchainMachine.actionMap = blockchain => {
     },
 
     async init () {
+      // p2p = container.resolvePlugin('p2p')
+
       try {
         let block = await blockchain.database.getLastBlock()
 
@@ -236,7 +238,7 @@ blockchainMachine.actionMap = blockchain => {
         await blockchain.database.buildWallets(block.data.height)
         await blockchain.database.saveWallets(true)
 
-        // NOTE: if the node is shutdown between round, the round has already been applied
+        // Edge case: if the node is shutdown between round, the round has already been applied
         if (blockchain.database.isNewRound(block.data.height + 1)) {
           const round = blockchain.database.getRound(block.data.height + 1)
 

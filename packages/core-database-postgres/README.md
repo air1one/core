@@ -1,11 +1,11 @@
 ![ARK Core](https://i.imgur.com/1aP6F2o.png)
 
-# ARK Core - PostgreSQL Database Provider
+# ARK Core - Sequelize Database Provider
 
 ## Installation
 
 ```bash
-yarn add @arkecosystem/core-database-postgres
+yarn add @arkecosystem/core-database-sequelize
 ```
 
 ## Configuration
@@ -14,24 +14,13 @@ yarn add @arkecosystem/core-database-postgres
 
 ```js
 module.exports = {
-  initialization: {
-    capSQL: true
-  },
-  connection: {
-    host: process.env.ARK_DB_HOST || 'localhost',
-    port: process.env.ARK_DB_PORT || 5432,
-    database: process.env.ARK_DB_USERNAME || `ark_${process.env.ARK_NETWORK_NAME}`,
-    user: process.env.ARK_DB_PASSWORD || 'ark',
-    password: process.env.ARK_DB_DATABASE || 'password'
-  },
-  redis: {
-    host: process.env.ARK_REDIS_HOST || 'localhost',
-    port: process.env.ARK_REDIS_PORT || 6379
-  }
+  dialect: 'sqlite',
+  storage: `${process.env.ARK_PATH_DATA}/database/${process.env.ARK_NETWORK_NAME}.sqlite`,
+  logging: process.env.ARK_DB_LOGGING
 }
 ```
 
-If you want to see all available configuration properties head over to https://github.com/vitaly-t/pg-promise.
+If you want to see all available configuration properties head over to http://docs.sequelizejs.com/manual/installation/usage.html#options.
 
 ## Security
 
@@ -39,7 +28,10 @@ If you discover a security vulnerability within this package, please send an e-m
 
 ## Credits
 
+- [François-Xavier Thoorens](https://github.com/fix)
+- [Kristjan Košič](https://github.com/kristjank)
 - [Brian Faust](https://github.com/faustbrian)
+- [Alex Barnsley](https://github.com/alexbarnsley)
 - [All Contributors](../../../../contributors)
 
 ## License

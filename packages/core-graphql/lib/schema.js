@@ -1,13 +1,13 @@
 'use strict';
 
-const { ApolloServer } = require('apollo-server-hapi')
+const { makeExecutableSchema } = require('graphql-tools')
 const resolvers = require('./resolvers')
 const typeDefs = require('./defs')
 
 /**
  * Schema used by the Apollo GraphQL plugin for the hapi.js server.
  */
-module.exports = new ApolloServer({
+module.exports = makeExecutableSchema({
   typeDefs,
   resolvers
 })

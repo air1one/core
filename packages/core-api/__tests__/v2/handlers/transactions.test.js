@@ -122,15 +122,14 @@ describe('API 2.0 - Transactions', () => {
       utils.expectCollection(response)
 
       expect(response.data.data).toHaveLength(100)
-      // FIX: estimate query issue with WHERE conditions
-      // expect(response.data.meta.totalCount).toBe(153)
+      expect(response.data.meta.totalCount).toBe(153)
 
       const transaction = response.data.data[0]
       utils.expectTransaction(transaction)
       expect(transaction.id).toBe(transactionId)
       expect(transaction.blockId).toBe(blockId)
     })
-
+    // TODO remove the search by id, to be sure that is OK
     it('should POST a search for transactions with the exact specified type', async () => {
       const response = await utils.request('POST', 'transactions/search', { type })
       utils.expectSuccessful(response)
@@ -150,8 +149,7 @@ describe('API 2.0 - Transactions', () => {
       utils.expectCollection(response)
 
       expect(response.data.data).toHaveLength(100)
-      // FIX: estimate query issue with WHERE conditions
-      // expect(response.data.meta.totalCount).toBe(153)
+      expect(response.data.meta.totalCount).toBe(153)
 
       const transaction = response.data.data[0]
       utils.expectTransaction(transaction)

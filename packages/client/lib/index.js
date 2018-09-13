@@ -6,19 +6,17 @@ const sortPeers = require('./utils/sort-peers')
 
 module.exports = class ApiClient {
   /**
-   * Finds all the available peers, sorted by block height and delay
+   * Finds all the available peers, sorted by block heigh and delay
    *
-   * @param {String}    network - Network name ('devnet' or 'mainnet')
-   * @param {Number}    version - API version
-   * @param {Object[]}  peersOverride - List of peers to use instead of initialPeers
-   * @return {Object[]}
+   * @param {String} network - Network name ('devnet' or 'mainnet')
+   * @param {Number} version - API version
    */
-  static async findPeers (network, version, peersOverride) {
-    if (peersOverride === undefined && !initialPeers.hasOwnProperty(network)) {
+  static async findPeers (network, version) {
+    if (!initialPeers.hasOwnProperty(network)) {
       throw new Error(`Network "${network}" is not supported`)
     }
 
-    const networkPeers = peersOverride || initialPeers[network]
+    const networkPeers = initialPeers[network]
 
     // Shuffle the peers to avoid connecting always to the first ones
     shuffle(networkPeers)
@@ -59,14 +57,11 @@ module.exports = class ApiClient {
   /**
    * Connects to a random peer of the network
    *
-   * @param {String}     network - Network name
-   * @param {Number}     version - API version
-   * @param {Number}     peersOverride - List of peers to use instead of initialPeers
-   * @return {ApiClient}
+   * @param {String} network - Network name
+   * @param {Number} version - API version
    */
-  static async connect (network, version, peersOverride) {
-    const peers = await ApiClient.findPeers(network, version, peersOverride)
-
+  static async connect (network, version) {
+    const peers = await ApiClient.findPeers(network, version)
     return new ApiClient(`http://${peers[0].ip}:${peers[0].port}`, version)
   }
 
@@ -74,7 +69,6 @@ module.exports = class ApiClient {
    * @constructor
    * @param {String} host
    * @param {Number} version - API version
-   * @return {void}
    */
   constructor (host, version) {
     this.setConnection(host)
@@ -84,7 +78,6 @@ module.exports = class ApiClient {
   /**
    * Create a HTTP connection to the API.
    * @param {String} host
-   * @return {void}
    */
   setConnection (host) {
     this.http = new HttpClient(host, this.version)
@@ -92,7 +85,7 @@ module.exports = class ApiClient {
 
   /**
    * Get the HTTP connection to the API.
-   * @return {(HttpClient|undefined)}
+   * @return {Object}
    */
   getConnection () {
     return this.http
@@ -100,8 +93,7 @@ module.exports = class ApiClient {
 
   /**
    * Set the API Version.
-   * @param {Number}     version
-   * @return {ApiClient}
+   * @param {Number} version
    */
   setVersion (version) {
     if (!version) {

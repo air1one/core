@@ -297,12 +297,13 @@ module.exports = class ConnectionInterface {
         try {
           this.updateDelegateStats(height, this.activedelegates)
           await this.saveWallets(false) // save only modified wallets during the last round
+
           const delegates = await this.buildDelegates(maxDelegates, nextHeight) // active build delegate list from database state
           await this.saveRound(delegates) // save next round delegate list
           await this.getActiveDelegates(nextHeight) // generate the new active delegates list
-
           this.blocksInCurrentRound.length = 0
-
+          // TODO: find a better place to call this as this
+          // currently blocks execution but needs to be updated every round
           if (this.stateStarted) {
             this.walletManager.updateDelegates()
           }
@@ -382,13 +383,10 @@ module.exports = class ConnectionInterface {
   async applyBlock (block) {
     await this.validateDelegate(block)
     this.walletManager.applyBlock(block)
-
     if (this.blocksInCurrentRound) {
       this.blocksInCurrentRound.push(block)
     }
-
     await this.applyRound(block.data.height)
-
     emitter.emit('block.applied', block.data)
   }
 
@@ -400,7 +398,6 @@ module.exports = class ConnectionInterface {
   async revertBlock (block) {
     await this.revertRound(block.data.height)
     await this.walletManager.revertBlock(block)
-
     if (this.blocksInCurrentRound) {
       this.blocksInCurrentRound.pop()
       // COMMENTED OUT: needs to be sure is properly synced
@@ -410,7 +407,6 @@ module.exports = class ConnectionInterface {
       //   throw new Error('Reverted wrong block. Restart is needed 💣')
       // }
     }
-
     emitter.emit('block.reverted', block.data)
   }
 

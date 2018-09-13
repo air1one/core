@@ -2,7 +2,7 @@
 
 const Hapi = require('hapi')
 const logger = require('@arkecosystem/core-container').resolvePlugin('logger')
-const server = require('./schema')
+const { graphqlHapi, graphiqlHapi } = require('apollo-server-hapi')
 
 /**
  * Create a new hapi.js server.
@@ -10,7 +10,7 @@ const server = require('./schema')
  * @return {Hapi.Server}
  */
 module.exports = async (config) => {
-  const app = new Hapi.Server({
+  const server = new Hapi.Server({
     host: config.host,
     port: config.port
   })
@@ -19,7 +19,7 @@ module.exports = async (config) => {
    * Register useful hapi.js plugins, the same are also found
    * in @arkecosystem/core-api.
    */
-  await app.register([require('vision'), require('inert'), require('lout')])
+  await server.register([require('vision'), require('inert'), require('lout')])
 
   /**
    * Register Apollo GraphQL plugin for hapi.js server with
@@ -27,12 +27,31 @@ module.exports = async (config) => {
    * The bulk of the Ark logic for GraphQL is rooted in the
    * schema module.
    */
-  await server.applyMiddleware({
-    app,
-    path: config.path
+  await server.register({
+    plugin: graphqlHapi,
+    options: {
+      path: config.path,
+      graphqlOptions: require('./schema'),
+      route: {
+        cors: true
+      }
+    }
   })
 
-  await server.installSubscriptionHandlers(app.listener)
+  /**
+   * Optionally register the GraphiQL Apollo hapi.js plugin
+   */
+  if (config.graphiql) {
+    await server.register({
+      plugin: graphiqlHapi,
+      options: {
+        path: '/graphiql',
+        graphiqlOptions: {
+          endpointURL: config.path
+        }
+      }
+    })
+  }
 
   /**
    * Start the hapi.js server and return it, exit process if
@@ -41,11 +60,11 @@ module.exports = async (config) => {
    * (@arkecosystem/core-container).resolvePlugin('graphql')
    */
   try {
-    await app.start()
+    await server.start()
 
-    logger.info(`GraphQL API Server running at: ${app.info.uri}`)
+    logger.info(`GraphQL API Server running at: ${server.info.uri}`)
 
-    return app
+    return server
   } catch (error) {
     logger.error(error.stack)
     // TODO no exit here?
