@@ -24,14 +24,15 @@ module.exports = {
   '@arkecosystem/core-database': {
     snapshots: `${process.env.ARK_PATH_DATA}/${process.env.ARK_NETWORK_NAME}.2/snapshots`
   },
-  '@arkecosystem/core-database-postgres': {
-    connection: {
-      host: process.env.ARK_DB_HOST || 'localhost',
-      port: process.env.ARK_DB_PORT || 5432,
-      database: process.env.ARK_DB_DATABASE || `ark_${process.env.ARK_NETWORK_NAME}2`,
-      user: process.env.ARK_DB_USERNAME || 'ark',
-      password: process.env.ARK_DB_PASSWORD || 'password'
-    },
+  '@arkecosystem/core-database-sequelize': {
+    dialect: 'sqlite',
+    storage: process.env.ARK_DB_STORAGE || `${process.env.ARK_PATH_DATA}/database/${process.env.ARK_NETWORK_NAME}.2.sqlite`,
+    // host: process.env.ARK_DB_HOST || 'localhost',
+    // dialect: process.env.ARK_DB_DIALECT || 'postgres',
+    // username: process.env.ARK_DB_USERNAME || 'ark',
+    // password: process.env.ARK_DB_PASSWORD || 'password',
+    // database: process.env.ARK_DB_DATABASE || 'ark_testnet2',
+    logging: process.env.ARK_DB_LOGGING,
     redis: {
       host: process.env.ARK_REDIS_HOST || 'localhost',
       port: process.env.ARK_REDIS_PORT || 6379
