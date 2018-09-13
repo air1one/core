@@ -12,12 +12,12 @@ exports.setUp = async () => {
     token: 'ark',
     network: 'testnet'
   }, {
-    exclude: [
-      '@arkecosystem/core-api',
-      '@arkecosystem/core-webhooks',
-      '@arkecosystem/core-graphql',
-      '@arkecosystem/core-forger',
-      '@arkecosystem/core-database-postgres'
+    include: [
+      '@arkecosystem/core-config',
+      '@arkecosystem/core-logger',
+      '@arkecosystem/core-logger-winston',
+      '@arkecosystem/core-json-rpc',
+      '@arkecosystem/core-p2p'
     ],
     options: {
       '@arkecosystem/core-json-rpc': {
