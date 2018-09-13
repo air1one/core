@@ -16,7 +16,9 @@ exports.setUp = async () => {
       '@arkecosystem/core-api',
       '@arkecosystem/core-webhooks',
       '@arkecosystem/core-graphql',
-      '@arkecosystem/core-forger'
+      '@arkecosystem/core-forger',
+      '@arkecosystem/core-database-postgres',
+      '@arkecosystem/core-blockchain'
     ],
     options: {
       '@arkecosystem/core-json-rpc': {
