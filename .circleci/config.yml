@@ -43,6 +43,3 @@ workflows:
       - test:
           requires:
             - build
-          filters:
-            branches:
-              only: ci
