@@ -33,7 +33,7 @@ jobs:
       - checkout
       - run:
           name: Test
-          command: ./node_modules/.bin/cross-env ARK_ENV=test ./node_modules/.bin/jest --detectOpenHandles --runInBand
+          command: ./ark-core/node_modules/.bin/cross-env ARK_ENV=test ./ark-core/node_modules/.bin/jest --detectOpenHandles --runInBand
 
 workflows:
   version: 2
