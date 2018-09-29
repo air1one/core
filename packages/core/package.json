@@ -68,7 +68,8 @@
     "bip38": "^2.0.2",
     "commander": "^2.15.1",
     "fs": "^0.0.1-security",
-    "wif": "^2.0.6"
+    "wif": "^2.0.6",
+    "nock": "*"
   },
   "publishConfig": {
     "access": "public"
