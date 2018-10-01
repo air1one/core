@@ -14,15 +14,15 @@ const { Transaction } = require('@arkecosystem/crypto').models
  * @return {Object}
  */
 module.exports = (model) => {
-  const data = Transaction.deserialize(model.serialized.toString('hex'))
+  const data = new Transaction(model.serialized.toString('hex'))
 
   return {
     id: data.id,
     blockid: model.blockId,
     type: data.type,
     timestamp: data.timestamp,
-    amount: data.amount,
-    fee: data.fee,
+    amount: +data.amount.toString(),
+    fee: +data.fee.toString(),
     recipientId: data.recipientId,
     senderId: crypto.getAddress(data.senderPublicKey, config.network.pubKeyHash),
     senderPublicKey: data.senderPublicKey,

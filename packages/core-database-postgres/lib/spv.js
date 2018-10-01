@@ -1,8 +1,9 @@
-const { Transaction } = require('@arkecosystem/crypto').models
+const { Bignum, models: { Transaction } } = require('@arkecosystem/crypto')
 const container = require('@arkecosystem/core-container')
 const logger = container.resolvePlugin('logger')
 const config = container.resolvePlugin('config')
 const queries = require('./queries')
+const genesisWallets = config.genesisBlock.transactions.map(tx => tx.senderId)
 
 module.exports = class SPV {
   /**
@@ -65,7 +66,7 @@ module.exports = class SPV {
       const wallet = this.walletManager.findByAddress(transaction.recipientId)
 
       wallet
-        ? wallet.balance = parseInt(transaction.amount)
+        ? wallet.balance = new Bignum(transaction.amount)
         : logger.warn(`Lost cold wallet: ${transaction.recipientId} ${transaction.amount}`)
     }
   }
@@ -75,11 +76,11 @@ module.exports = class SPV {
    * @return {void}
    */
   async __buildBlockRewards () {
-    const transactions = await this.query.many(queries.spv.blockRewards)
+    const blocks = await this.query.many(queries.spv.blockRewards)
 
-    for (const transaction of transactions) {
-      const wallet = this.walletManager.findByPublicKey(transaction.generatorPublicKey)
-      wallet.balance += parseInt(transaction.reward)
+    for (const block of blocks) {
+      const wallet = this.walletManager.findByPublicKey(block.generatorPublicKey)
+      wallet.balance = wallet.balance.plus(block.reward)
     }
   }
 
@@ -88,13 +89,13 @@ module.exports = class SPV {
    * @return {void}
    */
   async __buildLastForgedBlocks () {
-    const transactions = await this.query.many(queries.spv.lastForgedBlocks, {
+    const blocks = await this.query.many(queries.spv.lastForgedBlocks, {
       limit: this.activeDelegates
     })
 
-    for (const transaction of transactions) {
-      const wallet = this.walletManager.findByPublicKey(transaction.generatorPublicKey)
-      wallet.lastBlock = transaction
+    for (const block of blocks) {
+      const wallet = this.walletManager.findByPublicKey(block.generatorPublicKey)
+      wallet.lastBlock = block
     }
   }
 
@@ -107,12 +108,20 @@ module.exports = class SPV {
 
     for (const transaction of transactions) {
       let wallet = this.walletManager.findByPublicKey(transaction.senderPublicKey)
-      wallet.balance -= parseInt(transaction.amount) + parseInt(transaction.fee)
+      wallet.balance = wallet.balance.minus(transaction.amount).minus(transaction.fee)
 
-      if (wallet.balance < 0 && !this.walletManager.isGenesis(wallet)) {
+      if (wallet.balance.isLessThan(0) && !this.isGenesis(wallet)) {
         logger.warn(`Negative balance: ${wallet}`)
       }
     }
+  }
+
+  /**
+   * Used to determine if a wallet is a Genesis wallet.
+   * @return {Boolean}
+   */
+  isGenesis (wallet) {
+    return genesisWallets.includes(wallet.address)
   }
 
   /**
@@ -136,39 +145,28 @@ module.exports = class SPV {
     // Register...
     const transactions = await this.query.manyOrNone(queries.spv.delegates)
 
-    for (let i = 0; i < transactions.length; i++) {
-      const wallet = this.walletManager.findByPublicKey(transactions[i].senderPublicKey)
-      wallet.username = Transaction.deserialize(transactions[i].serialized.toString('hex')).asset.delegate.username
-
+    transactions.forEach(transaction => {
+      const wallet = this.walletManager.findByPublicKey(transaction.senderPublicKey)
+      wallet.username = Transaction.deserialize(transaction.serialized.toString('hex')).asset.delegate.username
       this.walletManager.reindex(wallet)
-    }
-
-    // Map public keys
-    const publicKeys = transactions.map(transaction => transaction.senderPublicKey)
+    })
 
     // Forged Blocks...
-    const forgedBlocks = await this.query.manyOrNone(queries.spv.delegatesForgedBlocks, { publicKeys })
+    const forgedBlocks = await this.query.manyOrNone(queries.spv.delegatesForgedBlocks)
+    forgedBlocks.forEach(block => {
+      const wallet = this.walletManager.findByPublicKey(block.generatorPublicKey)
+      wallet.forgedFees = wallet.forgedFees.plus(block.totalFees)
+      wallet.forgedRewards = wallet.forgedRewards.plus(block.totalRewards)
+      wallet.producedBlocks = +block.totalProduced
+    })
 
-    // Ranks...
-    const delegates = await this.query.manyOrNone(queries.spv.delegatesRanks, { publicKeys })
-
-    for (let i = 0; i < delegates.length; i++) {
-      const forgedBlock = forgedBlocks.filter(block => {
-        return block.generatorPublicKey === delegates[i].publicKey
-      })[0]
-
-      const wallet = this.walletManager.findByPublicKey(delegates[i].publicKey)
-      wallet.voteBalance = delegates[i].voteBalance
-      wallet.missedBlocks = parseInt(delegates[i].missedBlocks)
-
-      if (forgedBlock) {
-        wallet.forgedFees = +forgedBlock.totalFees
-        wallet.forgedRewards = +forgedBlock.totalRewards
-        wallet.producedBlocks = +forgedBlock.totalProduced
-      }
-
+    // NOTE: This is highly NOT reliable, however the number of missed blocks is NOT used for the consensus
+    const delegates = await this.query.manyOrNone(queries.spv.delegatesRanks)
+    delegates.forEach(delegate => {
+      const wallet = this.walletManager.findByPublicKey(delegate.publicKey)
+      wallet.missedBlocks = parseInt(delegate.missedBlocks)
       this.walletManager.reindex(wallet)
-    }
+    })
   }
 
   /**

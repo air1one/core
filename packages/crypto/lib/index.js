@@ -26,5 +26,9 @@ module.exports = {
   constants: require('./constants'),
 
   // Utils...
-  sortTransactions: require('./utils/sort-transactions')
+  sortTransactions: require('./utils/sort-transactions'),
+  Bignum: require('./utils/bignum'),
+
+  // Validations
+  ...require('./validation')
 }

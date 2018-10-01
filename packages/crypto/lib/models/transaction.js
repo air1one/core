@@ -1,4 +1,6 @@
 const bs58check = require('bs58check')
+const { cloneDeepWith } = require('lodash')
+const Bignum = require('../utils/bignum')
 const ByteBuffer = require('bytebuffer')
 const { createHash } = require('crypto')
 const crypto = require('../crypto/crypto')
@@ -32,30 +34,23 @@ const { TRANSACTION_TYPES } = require('../constants')
  */
 module.exports = class Transaction {
   constructor (data) {
-    this.serialized = Transaction.serialize(data)
-    this.data = Transaction.deserialize(this.serialized.toString('hex'))
-
-    if (this.data.version === 1) {
-      this.verified = crypto.verify(this.data)
-
-      if (!this.verified) {
-        // fix on issue of non homogeneus transaction type 1 payload
-        if (this.data.type === TRANSACTION_TYPES.SECOND_SIGNATURE || this.data.type === TRANSACTION_TYPES.MULTI_SIGNATURE) {
-          if (this.data.recipientId) {
-            delete this.data.recipientId
-          } else {
-            this.data.recipientId = crypto.getAddress(this.data.senderPublicKey, this.data.network)
-          }
-
-          this.verified = crypto.verify(this.data)
-          this.data.id = crypto.getId(this.data)
-        }
-      }
+    if (typeof data === 'string') {
+      this.serialized = Buffer.from(data, 'hex')
     } else {
+      this.serialized = Transaction.serialize(data)
+    }
+    const deserialized = Transaction.deserialize(this.serialized.toString('hex'))
+
+    if (deserialized.version === 1) {
+      Transaction.applyV1Compatibility(deserialized)
+      this.verified = deserialized.verified
+      delete deserialized.verified
+    } else if (deserialized.version === 2) {
+      deserialized.id = createHash('sha256').update(this.serialized).digest().toString('hex')
+
       // TODO: enable AIP11 when network ready
       this.verified = false
     }
-
     // if (this.data.amount !== transaction.amount) console.error('bang', transaction, this.data);
     [
       'id',
@@ -78,12 +73,66 @@ module.exports = class Transaction {
       'timelock',
       'timelockType'
     ].forEach((key) => {
-      this[key] = this.data[key]
+      this[key] = deserialized[key]
     }, this)
+
+    this.data = deserialized
   }
 
+  static applyV1Compatibility (deserialized) {
+    if (deserialized.secondSignature) {
+      deserialized.signSignature = deserialized.secondSignature
+    }
+
+    if (deserialized.type === TRANSACTION_TYPES.VOTE) {
+      deserialized.recipientId = crypto.getAddress(deserialized.senderPublicKey, deserialized.network)
+    }
+
+    if (deserialized.vendorFieldHex) {
+      deserialized.vendorField = Buffer.from(deserialized.vendorFieldHex, 'hex').toString('utf8')
+    }
+
+    if (deserialized.type === TRANSACTION_TYPES.MULTI_SIGNATURE) {
+      deserialized.asset.multisignature.keysgroup = deserialized.asset.multisignature.keysgroup.map(k => '+' + k)
+    }
+
+    if (deserialized.type === TRANSACTION_TYPES.SECOND_SIGNATURE || deserialized.type === TRANSACTION_TYPES.MULTI_SIGNATURE) {
+      deserialized.recipientId = crypto.getAddress(deserialized.senderPublicKey, deserialized.network)
+    }
+
+    if (!deserialized.id) {
+      deserialized.id = crypto.getId(deserialized)
+    }
+
+    deserialized.verified = crypto.verify(deserialized)
+
+    if (!deserialized.verified) {
+      // fix on issue of non homogeneus transaction type 1 payload
+      if (deserialized.type === TRANSACTION_TYPES.SECOND_SIGNATURE || deserialized.type === TRANSACTION_TYPES.MULTI_SIGNATURE) {
+        if (deserialized.recipientId) {
+          delete deserialized.recipientId
+        } else {
+          deserialized.recipientId = crypto.getAddress(deserialized.senderPublicKey, deserialized.network)
+        }
+
+        deserialized.verified = crypto.verify(deserialized)
+        deserialized.id = crypto.getId(deserialized)
+      }
+    }
+
+    if (deserialized.type > 4) {
+      deserialized.verified = false
+    }
+  }
+
+  /*
+   * Return a clean transaction data from the serialized form.
+   * @return {Object}
+   */
   static fromBytes (hexString) {
-    return new Transaction(Transaction.deserialize(hexString))
+    const deserialized = Transaction.deserialize(hexString)
+    Transaction.applyV1Compatibility(deserialized)
+    return new Transaction(deserialized)
   }
 
   verify () {
@@ -100,7 +149,7 @@ module.exports = class Transaction {
         id: this.id,
         type: this.type,
         amount: 0,
-        fee: this.fee,
+        fee: this.fee.toNumber(),
         recipientId: null,
         senderPublicKey: this.senderPublicKey,
         timestamp: this.timestamp,
@@ -114,7 +163,12 @@ module.exports = class Transaction {
       }
     }
 
-    return this.data
+    // Convert Bignums
+    return cloneDeepWith(this.data, (value, key) => {
+      if (['amount', 'fee'].indexOf(key) !== -1) {
+        return value.toNumber()
+      }
+    })
   }
 
   // AIP11 serialization
@@ -126,7 +180,7 @@ module.exports = class Transaction {
     bb.writeByte(transaction.type)
     bb.writeUInt32(transaction.timestamp)
     bb.append(transaction.senderPublicKey, 'hex')
-    bb.writeUInt64(transaction.fee)
+    bb.writeUInt64(+transaction.fee.toString())
 
     if (transaction.vendorField) {
       let vf = Buffer.from(transaction.vendorField, 'utf8')
@@ -140,9 +194,8 @@ module.exports = class Transaction {
     }
 
     // TODO use else if
-
     if (transaction.type === TRANSACTION_TYPES.TRANSFER) {
-      bb.writeUInt64(transaction.amount)
+      bb.writeUInt64(+transaction.amount.toString())
       bb.writeUInt32(transaction.expiration || 0)
       bb.append(bs58check.decode(transaction.recipientId))
     }
@@ -185,7 +238,7 @@ module.exports = class Transaction {
     }
 
     if (transaction.type === TRANSACTION_TYPES.TIMELOCK_TRANSFER) {
-      bb.writeUInt64(transaction.amount)
+      bb.writeUInt64(+transaction.amount.toString())
       bb.writeByte(transaction.timelockType)
       bb.writeUInt32(transaction.timelock)
       bb.append(bs58check.decode(transaction.recipientId))
@@ -231,7 +284,7 @@ module.exports = class Transaction {
     transaction.type = buf.readInt8(3)
     transaction.timestamp = buf.readUInt32(4)
     transaction.senderPublicKey = hexString.substring(16, 16 + 33 * 2)
-    transaction.fee = buf.readUInt64(41).toNumber()
+    transaction.fee = new Bignum(buf.readUInt64(41))
 
     const vflength = buf.readInt8(41 + 8)
     if (vflength > 0) {
@@ -241,7 +294,7 @@ module.exports = class Transaction {
     const assetOffset = (41 + 8 + 1) * 2 + vflength * 2
 
     if (transaction.type === TRANSACTION_TYPES.TRANSFER) {
-      transaction.amount = buf.readUInt64(assetOffset / 2).toNumber()
+      transaction.amount = new Bignum(buf.readUInt64(assetOffset / 2))
       transaction.expiration = buf.readUInt32(assetOffset / 2 + 8)
       transaction.recipientId = bs58check.encode(buf.buffer.slice(assetOffset / 2 + 12, assetOffset / 2 + 12 + 21))
 
@@ -307,7 +360,7 @@ module.exports = class Transaction {
     }
 
     if (transaction.type === TRANSACTION_TYPES.TIMELOCK_TRANSFER) {
-      transaction.amount = buf.readUInt64(assetOffset / 2).toNumber()
+      transaction.amount = new Bignum(buf.readUInt64(assetOffset / 2))
       transaction.timelockType = buf.readInt8(assetOffset / 2 + 8) & 0xff
       transaction.timelock = buf.readUInt64(assetOffset / 2 + 9).toNumber()
       transaction.recipientId = bs58check.encode(buf.buffer.slice(assetOffset / 2 + 13, assetOffset / 2 + 13 + 21))
@@ -323,13 +376,13 @@ module.exports = class Transaction {
 
       for (let j = 0; j < total; j++) {
         const payment = {}
-        payment.amount = buf.readUInt64(offset).toNumber()
+        payment.amount = new Bignum(buf.readUInt64(offset))
         payment.recipientId = bs58check.encode(buf.buffer.slice(offset + 1, offset + 1 + 21))
         transaction.asset.payments.push(payment)
         offset += 22
       }
 
-      transaction.amount = transaction.asset.payments.reduce((a, p) => (a += p.amount), 0)
+      transaction.amount = transaction.asset.payments.reduce((a, p) => (a.plus(p.amount)), Bignum.ZERO)
 
       Transaction.parseSignatures(hexString, transaction, offset * 2)
     }
@@ -339,37 +392,7 @@ module.exports = class Transaction {
     }
 
     if (!transaction.amount) { // this is needed for computation over the blockchain
-      transaction.amount = 0
-    }
-
-    if (!transaction.version || transaction.version === 1) {
-      if (transaction.secondSignature) {
-        transaction.signSignature = transaction.secondSignature
-      }
-
-      if (transaction.type === TRANSACTION_TYPES.VOTE) {
-        transaction.recipientId = crypto.getAddress(transaction.senderPublicKey, transaction.network)
-      }
-
-      if (transaction.vendorFieldHex) {
-        transaction.vendorField = Buffer.from(transaction.vendorFieldHex, 'hex').toString('utf8')
-      }
-
-      if (transaction.type === TRANSACTION_TYPES.MULTI_SIGNATURE) {
-        transaction.asset.multisignature.keysgroup = transaction.asset.multisignature.keysgroup.map(k => '+' + k)
-      }
-
-      if (!transaction.id) {
-        transaction.id = crypto.getId(transaction)
-      }
-
-      if (transaction.type === TRANSACTION_TYPES.SECOND_SIGNATURE || transaction.type === TRANSACTION_TYPES.MULTI_SIGNATURE) {
-        transaction.recipientId = crypto.getAddress(transaction.senderPublicKey, transaction.network)
-      }
-    }
-
-    if (transaction.version === 2) {
-      transaction.id = createHash('sha256').update(Buffer.from(hexString, 'hex')).digest().toString('hex')
+      transaction.amount = Bignum.ZERO
     }
 
     return transaction
