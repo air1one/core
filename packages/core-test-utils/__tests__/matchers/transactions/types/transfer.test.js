@@ -1,6 +1,8 @@
 const { TRANSFER } = require('@arkecosystem/crypto').constants
 
-require('../../../../lib/matchers/transactions/types/transfer')
+expect.extend({
+  toBeTransferType: require('../../../../lib/matchers/transactions/types/transfer')
+})
 
 describe('.toBeTransferType', () => {
   test('passes when given a valid transaction', () => {

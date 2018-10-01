@@ -1,6 +1,8 @@
 const { IPFS } = require('@arkecosystem/crypto').constants
 
-require('../../../../lib/matchers/transactions/types/ipfs')
+expect.extend({
+  toBeIpfsType: require('../../../../lib/matchers/transactions/types/ipfs')
+})
 
 describe('.toBeIpfsType', () => {
   test('passes when given a valid transaction', () => {

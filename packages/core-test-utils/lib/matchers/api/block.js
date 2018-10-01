@@ -31,7 +31,7 @@ function isValidBlock (block) {
     return isEqual(sortBy(actualKeys), allowedKeys)
 }
 
-expect.extend({
+module.exports = {
     toBeValidBlock,
     toBeValidArrayOfBlocks
-})
+}

@@ -310,8 +310,8 @@ class TransactionsRepository extends Repository {
     applyConditions([selectQuery, countQuery])
 
     const results = await this._findManyWithCount(selectQuery, countQuery, {
-      limit: parameters.limit || 100,
-      offset: parameters.offset || 0,
+      limit: parameters.limit,
+      offset: parameters.offset,
       orderBy: this.__orderBy(parameters)
     })
 

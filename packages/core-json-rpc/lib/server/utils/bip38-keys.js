@@ -1,18 +1,17 @@
-const { configManager, crypto, utils } = require('@arkecosystem/crypto')
+const { utils, ECPair } = require('@arkecosystem/crypto')
 const bip38 = require('bip38')
-const wif = require('wif')
+const BigInteger = require('bigi')
 const database = require('../services/database')
 
 module.exports = async (userId, bip38password) => {
   try {
-    const encryptedWif = await database.get(utils.sha256(Buffer.from(userId)).toString('hex'))
+    const wif = await database.get(utils.sha256(Buffer.from(userId)).toString('hex'))
 
-    if (encryptedWif) {
-      const decrypted = bip38.decrypt(encryptedWif.toString('hex'), bip38password + userId)
-      const wifKey = wif.encode(configManager.get('wif'), decrypted.privateKey, decrypted.compressed)
-      const keys = crypto.getKeysFromWIF(wifKey)
+    if (wif) {
+      const decrypted = bip38.decrypt(wif.toString('hex'), bip38password + userId)
+      const keys = new ECPair(BigInteger.fromBuffer(decrypted.privateKey), null)
 
-      return { keys, wif: encryptedWif }
+      return { keys, wif }
     }
   } catch (error) {
     throw Error('Could not find a matching WIF')

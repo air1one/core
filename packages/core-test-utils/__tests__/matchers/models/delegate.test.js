@@ -1,4 +1,6 @@
-require('../../../lib/matchers/models/delegate')
+expect.extend({
+  toBeDelegate: require('../../../lib/matchers/models/delegate')
+})
 
 const delegate = {
   username: 'arkxdev',

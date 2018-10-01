@@ -12,8 +12,8 @@ module.exports = {
     '**/packages/core-deployer/**/__tests__/**/*.test.js',
     '**/packages/core-event-emitter/**/__tests__/**/*.test.js',
     '**/packages/core-forger/**/__tests__/**/*.test.js',
-    '**/packages/core-graphql/**/__tests__/**/*.test.js',
-    // '**/packages/core-json-rpc/**/__tests__/**/*.test.js',
+    // '**/packages/core-graphql/**/__tests__/**/*.test.js',
+    '**/packages/core-json-rpc/**/__tests__/**/*.test.js',
     '**/packages/core-logger-winston/**/__tests__/**/*.test.js',
     '**/packages/core-logger/**/__tests__/**/*.test.js',
     '**/packages/core-p2p/**/__tests__/**/*.test.js',
@@ -22,7 +22,8 @@ module.exports = {
     '**/packages/core-transaction-pool-redis/**/__tests__/**/*.test.js',
     '**/packages/core-transaction-pool/**/__tests__/**/*.test.js',
     '**/packages/core-webhooks/**/__tests__/**/*.test.js',
-    '**/packages/crypto/**/__tests__/**/*.test.js'
+    '**/packages/crypto/**/__tests__/**/*.test.js',
+    '**/packages/validation/**/__tests__/**/*.test.js'
   ],
   moduleFileExtensions: [
     'js',

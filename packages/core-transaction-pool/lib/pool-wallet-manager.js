@@ -28,14 +28,14 @@ module.exports = class PoolWalletManager extends WalletManager {
    * @return {(Wallet|null)}
    */
   findByAddress (address) {
-    if (!this.byAddress[address]) {
+    if (!this.byAddress.get(address)) {
       const blockchainWallet = database.walletManager.findByAddress(address)
       const wallet = Object.assign(new Wallet(address), blockchainWallet) // do not modify
 
       this.reindex(wallet)
     }
 
-    return this.byAddress[address]
+    return this.byAddress.get(address)
   }
 
   /**
@@ -45,11 +45,11 @@ module.exports = class PoolWalletManager extends WalletManager {
    * @return {Boolean} true if exists
    */
   exists (key) {
-    if (this.byPublicKey[key]) {
+    if (this.byPublicKey.get(key)) {
       return true
     }
 
-    if (this.byAddress[key]) {
+    if (this.byAddress.get(key)) {
       return true
     }
     return false
@@ -77,7 +77,7 @@ module.exports = class PoolWalletManager extends WalletManager {
       this.setByAddress(recipientId, recipient)
     }
 
-    if (type === TRANSACTION_TYPES.DELEGATE_REGISTRATION && database.walletManager.byUsername[asset.delegate.username.toLowerCase()]) {
+    if (type === TRANSACTION_TYPES.DELEGATE_REGISTRATION && database.walletManager.byUsername.get(asset.delegate.username.toLowerCase())) {
 
       logger.error(`PoolWalletManager: Can't apply transaction ${data.id}: delegate name already taken.`, JSON.stringify(data))
       throw new Error(`PoolWalletManager: Can't apply transaction ${data.id}: delegate name already taken.`)

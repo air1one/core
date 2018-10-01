@@ -1,6 +1,8 @@
 const Machine = require('xstate').Machine
 
-require('../../../lib/matchers/blockchain/transition')
+expect.extend({
+  toTransition: require('../../../lib/matchers/blockchain/transition')
+})
 
 describe('.toTransition', () => {
   const machine = Machine({

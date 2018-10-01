@@ -30,7 +30,7 @@ function isValidPeer (peer) {
   return isEqual(sortBy(actualKeys), allowedKeys)
 }
 
-expect.extend({
+module.exports = {
     toBeValidPeer,
     toBeValidArrayOfPeers
-})
+}

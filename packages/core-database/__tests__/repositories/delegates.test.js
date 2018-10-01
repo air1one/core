@@ -1,8 +1,7 @@
 'use strict'
 
 const app = require('../__support__/setup')
-const { Bignum, crypto, constants: { ARKTOSHI } } = require('@arkecosystem/crypto')
-const { Block } = require('@arkecosystem/crypto').models
+const { crypto } = require('@arkecosystem/crypto')
 
 let genesisBlock
 let repository
@@ -15,7 +14,7 @@ beforeAll(async (done) => {
 
   // Create the genesis block after the setup has finished or else it uses a potentially
   // wrong network config.
-  genesisBlock = new Block(require('@arkecosystem/core-test-utils/config/testnet/genesisBlock.json'))
+  genesisBlock = require('../__fixtures__/genesisBlock')
 
   const delegateCalculator = require('../../lib/repositories/utils/delegate-calculator')
   calculateApproval = delegateCalculator.calculateApproval
@@ -47,8 +46,8 @@ function generateWallets () {
       secondPublicKey: `secondPublicKey-${address}`,
       vote: `vote-${address}`,
       username: `username-${address}`,
-      balance: new Bignum(100),
-      voteBalance: new Bignum(200)
+      balance: 100,
+      voteBalance: 200
     }
   })
 }
@@ -299,7 +298,7 @@ describe('Delegate Repository', () => {
       const delegate = {
         username: 'test',
         publicKey: 'test',
-        balance: new Bignum(10000 * ARKTOSHI),
+        balance: 10000 * Math.pow(10, 8),
         producedBlocks: 1000,
         missedBlocks: 500
       }

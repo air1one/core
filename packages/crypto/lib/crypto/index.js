@@ -1,6 +1,9 @@
 module.exports = {
   crypto: require('./crypto'),
-  hdwallet: require('./hdwallet'),
+  ecdsa: require('./ecdsa'),
+  ECPair: require('./ecpair'),
+  ECSignature: require('./ecsignature'),
+  HDNode: require('./hdnode'),
   slots: require('./slots'),
   utils: require('./utils')
 }

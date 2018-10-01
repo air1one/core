@@ -1,6 +1,8 @@
 const { DELEGATE } = require('@arkecosystem/crypto').constants
 
-require('../../../../lib/matchers/transactions/types/delegate')
+expect.extend({
+  toBeDelegateType: require('../../../../lib/matchers/transactions/types/delegate')
+})
 
 describe('.toBeDelegateType', () => {
   test('passes when given a valid transaction', () => {

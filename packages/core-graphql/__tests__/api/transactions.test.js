@@ -1,6 +1,5 @@
 const app = require('../__support__/setup')
 const utils = require('../__support__/utils')
-require('@arkecosystem/core-test-utils/lib/matchers')
 
 beforeAll(async () => {
   await app.setUp()
@@ -16,10 +15,10 @@ describe('GraphQL API { transactions }', () => {
       const query = '{ transactions(filter: { fee: 0 }) { id } }'
       const response = await utils.request(query)
 
-      expect(response).toBeSuccessfulResponse()
+      utils.expectSuccessful(response)
+      utils.expectResource(response)
 
       const data = response.data.data
-      expect(data).toBeObject()
       expect(data.transactions.length).toBe(100) // because of default limit = 100
     })
 
@@ -27,10 +26,10 @@ describe('GraphQL API { transactions }', () => {
       const query = '{ transactions(filter: { fee: 987 }) { id } }'
       const response = await utils.request(query)
 
-      expect(response).toBeSuccessfulResponse()
+      utils.expectSuccessful(response)
+      utils.expectResource(response)
 
       const data = response.data.data
-      expect(data).toBeObject()
       expect(data.transactions.length).toBe(0)
     })
   })

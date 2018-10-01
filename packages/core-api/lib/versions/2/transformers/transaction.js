@@ -15,15 +15,15 @@ const formatTimestamp = require('./utils/format-timestamp')
  * @return {Object}
  */
 module.exports = (model) => {
-  const data = new Transaction(model.serialized.toString('hex'))
+  const data = Transaction.deserialize(model.serialized.toString('hex'))
   const lastBlock = blockchain.getLastBlock()
 
   return {
     id: data.id,
     blockId: model.blockId,
     type: data.type,
-    amount: +data.amount.toString(),
-    fee: +data.fee.toString(),
+    amount: data.amount,
+    fee: data.fee,
     sender: crypto.getAddress(data.senderPublicKey, config.network.pubKeyHash),
     recipient: data.recipientId,
     signature: data.signature,

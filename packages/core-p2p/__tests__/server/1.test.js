@@ -1,6 +1,5 @@
 'use strict'
 
-const { Block, Transaction } = require('@arkecosystem/crypto').models
 const app = require('../__support__/setup')
 const utils = require('../__support__/utils')
 
@@ -12,8 +11,8 @@ beforeAll(async () => {
 
   // Create the genesis block after the setup has finished or else it uses a potentially
   // wrong network config.
-  genesisBlock = new Block(require('@arkecosystem/core-test-utils/config/testnet/genesisBlock.json'))
-  genesisTransaction = new Transaction(genesisBlock.transactions[0])
+  genesisBlock = require('../__fixtures__/genesisBlock')
+  genesisTransaction = require('../__fixtures__/genesisTransaction')
 })
 
 afterAll(async () => {

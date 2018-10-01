@@ -1,6 +1,8 @@
 const { NetworkManager } = require('@arkecosystem/crypto')
 
-require('../../../lib/matchers/transactions/valid-second-signature')
+expect.extend({
+  toHaveValidSecondSignature: require('../../../lib/matchers/transactions/valid-second-signature')
+})
 
 const transaction = {
   version: 1,

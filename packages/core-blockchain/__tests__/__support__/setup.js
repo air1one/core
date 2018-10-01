@@ -1,12 +1,17 @@
 'use strict'
 
+const path = require('path')
 const container = require('@arkecosystem/core-container')
-const containerHelper = require('@arkecosystem/core-test-utils/lib/helpers/container')
 
 jest.setTimeout(60000)
 
 exports.setUp = async () => {
-  await containerHelper.setUp({
+  await container.setUp({
+    data: '~/.ark',
+    config: path.resolve(__dirname, '../../../core/lib/config/testnet'),
+    token: 'ark',
+    network: 'testnet'
+  }, {
     exit: '@arkecosystem/core-p2p',
     exclude: ['@arkecosystem/core-blockchain']
   })

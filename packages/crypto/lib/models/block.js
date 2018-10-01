@@ -1,14 +1,14 @@
-const { cloneDeepWith } = require('lodash')
-const { createHash } = require('crypto')
+const crypto = require('crypto')
+const Bignum = require('bigi')
 const ByteBuffer = require('bytebuffer')
-const Bignum = require('../utils/bignum')
+const secp256k1 = require('secp256k1')
 const Transaction = require('./transaction')
 const configManager = require('../managers/config')
-const { crypto, slots } = require('../crypto')
+const slots = require('../crypto/slots')
 const { outlookTable } = require('../constants').CONFIGURATIONS.ARK.MAINNET
 
-const toBytesHex = (data) => {
-  const temp = new Bignum(data).toString(16)
+const toBytesHex = (buffer) => {
+  let temp = buffer.toString('hex')
   return '0'.repeat(16 - temp.length) + temp
 }
 
@@ -18,9 +18,19 @@ const toBytesHex = (data) => {
   */
 const applyV1Fix = (data) => {
   // START Fix for v1 api
-  data.previousBlockHex = data.previousBlock ? toBytesHex(data.previousBlock) : '0000000000000000'
-  data.idHex = toBytesHex(data.id)
+  data.totalAmount = parseInt(data.totalAmount)
+  data.totalFee = parseInt(data.totalFee)
+  data.reward = parseInt(data.reward)
+  data.previousBlockHex = data.previousBlock ? toBytesHex(new Bignum(data.previousBlock).toBuffer()) : '0000000000000000'
+  data.idHex = toBytesHex(new Bignum(data.id).toBuffer())
   // END Fix for v1 api
+
+  // order of transactions messed up in mainnet V1
+  // if (block.data.transactions.length === 2 && (block.data.height === 3084276 || block.data.height === 34420)) {
+  //   const temp = block.data.transactions[0]
+  //   block.data.transactions[0] = block.data.transactions[1]
+  //   block.data.transactions[1] = temp
+  // }
 }
 
 /**
@@ -77,17 +87,22 @@ module.exports = class Block {
 
     if (outlookTable[this.data.id]) {
       this.data.id = outlookTable[this.data.id]
-      this.data.idHex = toBytesHex(this.data.id)
+      this.data.idHex = toBytesHex(new Bignum(this.data.id).toBuffer())
     }
     if (data.id !== this.data.id) {
       console.log(`'${this.data.id}': '${data.id}',`)
     }
 
+    // if (data.height === 1622706) {
+    //   console.log(data)
+    //   console.log(this.data)
+    // }
+
     if (data.height === 1) {
       this.genesis = true
       // TODO genesis block calculated id is wrong for some reason
       this.data.id = data.id
-      this.data.idHex = toBytesHex(this.data.id)
+      this.data.idHex = toBytesHex(new Bignum(this.data.id).toBuffer())
       delete this.data.previousBlock
     }
 
@@ -109,14 +124,6 @@ module.exports = class Block {
 
     this.verification = this.verify()
 
-    // order of transactions messed up in mainnet V1
-    // TODO: move this to network constants exception using block ids
-    if (this.transactions && this.data.numberOfTransactions === 2 && (this.data.height === 3084276 || this.data.height === 34420)) {
-      const temp = this.transactions[0]
-      this.transactions[0] = this.transactions[1]
-      this.transactions[1] = temp
-    }
-
     if (!this.verification.verified && this.data.height !== 1) {
       // console.log(JSON.stringify(data, null, 2))
       console.log(this.serialized)
@@ -127,7 +134,7 @@ module.exports = class Block {
   /*
    * Create block from data.
    * @param  {Object} data
-   * @param  {Object} keys
+   * @param  {ECPair}} keys
    * @return {Block}
    * @static
    */
@@ -135,9 +142,9 @@ module.exports = class Block {
     data.generatorPublicKey = keys.publicKey
 
     const payloadHash = Block.serialize(data, false)
-    const hash = createHash('sha256').update(payloadHash).digest()
+    const hash = crypto.createHash('sha256').update(payloadHash).digest()
 
-    data.blockSignature = crypto.signHash(hash, keys)
+    data.blockSignature = keys.sign(hash).toDER().toString('hex')
     data.id = Block.getId(data)
 
     return new Block(data)
@@ -161,12 +168,13 @@ module.exports = class Block {
 
   /*
    * Get block id
+   * TODO rename to getIdHex ?
    * @param  {Object} data
    * @return {String}
    * @static
    */
   static getIdHex (data) {
-    const hash = createHash('sha256').update(Block.serialize(data, true)).digest()
+    const hash = crypto.createHash('sha256').update(Block.serialize(data, true)).digest()
     const temp = Buffer.alloc(8)
 
     for (let i = 0; i < 8; i++) {
@@ -176,8 +184,13 @@ module.exports = class Block {
   }
 
   static getId (data) {
-    const idHex = Block.getIdHex(data)
-    return new Bignum(idHex, 16).toString()
+    const hash = crypto.createHash('sha256').update(Block.serialize(data, true)).digest()
+    const temp = Buffer.alloc(8)
+
+    for (let i = 0; i < 8; i++) {
+      temp[i] = hash[7 - i]
+    }
+    return Bignum.fromBuffer(temp).toString()
   }
 
   /*
@@ -196,9 +209,17 @@ module.exports = class Block {
    */
   verifySignature () {
     const bytes = Block.serialize(this.data, false)
-    const hash = createHash('sha256').update(bytes).digest()
+    const hash = crypto.createHash('sha256').update(bytes).digest()
 
-    return crypto.verifyHash(hash, this.data.blockSignature, this.data.generatorPublicKey)
+    const blockSignatureBuffer = Buffer.from(this.data.blockSignature, 'hex')
+    const generatorPublicKeyBuffer = Buffer.from(this.data.generatorPublicKey, 'hex')
+
+    try {
+      const signature = secp256k1.signatureImport(blockSignatureBuffer)
+      return secp256k1.verify(hash, signature, generatorPublicKeyBuffer)
+    } catch (ex) {
+      return false
+    }
   }
 
   /*
@@ -223,7 +244,7 @@ module.exports = class Block {
         }
       }
 
-      if (!constants.reward === block.reward.toNumber()) {
+      if (constants.reward !== block.reward) {
         result.errors.push(['Invalid block reward:', block.reward, 'expected:', constants.reward].join(' '))
       }
 
@@ -254,7 +275,7 @@ module.exports = class Block {
       }
 
       let size = 0
-      let payloadHash = createHash('sha256')
+      let payloadHash = crypto.createHash('sha256')
 
       if (this.headerOnly) {
         if (this.transactionIds.length !== block.numberOfTransactions) {
@@ -280,10 +301,8 @@ module.exports = class Block {
           payloadHash.update(bytes)
         })
       } else {
-        const invalidTransactions = this.transactions.filter(tx => !tx.verified)
-        if (invalidTransactions.length > 0) {
-          result.errors.push('One or more transactions are not verified:')
-          invalidTransactions.forEach(tx => result.errors.push('=> ' + tx.serialized.toString('hex')))
+        if (!this.transactions.reduce((wallet, transaction) => wallet && transaction.verified, true)) {
+          result.errors.push('One or more transactions are not verified')
         }
 
         if (this.transactions.length !== block.numberOfTransactions) {
@@ -296,8 +315,8 @@ module.exports = class Block {
 
         // Checking if transactions of the block adds up to block values.
         let appliedTransactions = {}
-        let totalAmount = Bignum.ZERO
-        let totalFee = Bignum.ZERO
+        let totalAmount = 0
+        let totalFee = 0
         this.transactions.forEach(transaction => {
           const bytes = Buffer.from(transaction.data.id, 'hex')
 
@@ -307,18 +326,18 @@ module.exports = class Block {
 
           appliedTransactions[transaction.data.id] = transaction.data
 
-          totalAmount = totalAmount.plus(transaction.data.amount)
-          totalFee = totalFee.plus(transaction.data.fee)
+          totalAmount += transaction.data.amount
+          totalFee += transaction.data.fee
           size += bytes.length
 
           payloadHash.update(bytes)
         })
 
-        if (!totalAmount.isEqualTo(block.totalAmount)) {
+        if (totalAmount !== block.totalAmount) {
           result.errors.push('Invalid total amount')
         }
 
-        if (!totalFee.isEqualTo(block.totalFee)) {
+        if (totalFee !== block.totalFee) {
           result.errors.push('Invalid total fee')
         }
       }
@@ -354,9 +373,9 @@ module.exports = class Block {
     block.previousBlockHex = buf.slice(12, 20).toString('hex')
     block.previousBlock = Bignum(block.previousBlockHex, 16).toString()
     block.numberOfTransactions = buf.readUInt32(20)
-    block.totalAmount = new Bignum(buf.readUInt64(24))
-    block.totalFee = new Bignum(buf.readUInt64(32))
-    block.reward = new Bignum(buf.readUInt64(40))
+    block.totalAmount = buf.readUInt64(24).toNumber()
+    block.totalFee = buf.readUInt64(32).toNumber()
+    block.reward = buf.readUInt64(40).toNumber()
     block.payloadLength = buf.readUInt32(48)
     block.payloadHash = hexString.substring(104, 104 + 64)
     block.generatorPublicKey = hexString.substring(104 + 64, 104 + 64 + 33 * 2)
@@ -410,7 +429,6 @@ module.exports = class Block {
    */
   static serialize (block, includeSignature = true) {
     applyV1Fix(block)
-
     const bb = new ByteBuffer(256, true)
     bb.writeUInt32(block.version)
     bb.writeUInt32(block.timestamp)
@@ -424,9 +442,9 @@ module.exports = class Block {
     }
 
     bb.writeUInt32(block.numberOfTransactions)
-    bb.writeUInt64(+block.totalAmount.toString())
-    bb.writeUInt64(+block.totalFee.toString())
-    bb.writeUInt64(+block.reward.toString())
+    bb.writeUInt64(block.totalAmount)
+    bb.writeUInt64(block.totalFee)
+    bb.writeUInt64(block.reward)
     bb.writeUInt32(block.payloadLength)
     bb.append(block.payloadHash, 'hex')
     bb.append(block.generatorPublicKey, 'hex')
@@ -463,7 +481,7 @@ module.exports = class Block {
       let i
 
       if (block.previousBlock) {
-        const pb = Buffer.from(new Bignum(block.previousBlock).toString(16), 'hex')
+        const pb = Bignum(block.previousBlock).toBuffer({size: '8'})
 
         for (i = 0; i < 8; i++) {
           bb.writeByte(pb[i])
@@ -475,9 +493,9 @@ module.exports = class Block {
       }
 
       bb.writeInt(block.numberOfTransactions)
-      bb.writeLong(+block.totalAmount.toString())
-      bb.writeLong(+block.totalFee.toString())
-      bb.writeLong(+block.reward.toString())
+      bb.writeLong(block.totalAmount)
+      bb.writeLong(block.totalFee)
+      bb.writeLong(block.reward)
 
       bb.writeInt(block.payloadLength)
 
@@ -507,15 +525,8 @@ module.exports = class Block {
   }
 
   toRawJson () {
-    // Convert Bignums
-    let blockData = cloneDeepWith(this.data, (value, key) => {
-      if (['reward', 'totalAmount', 'totalFee'].indexOf(key) !== -1) {
-        return value.toNumber()
-      }
-    })
-
-    return Object.assign(blockData, {
-      transactions: this.transactions.map(transaction => transaction.toBroadcastV1())
+    return Object.assign(this.data, {
+      transactions: this.transactions.map(transaction => transaction.data)
     })
   }
 }

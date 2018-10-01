@@ -1,6 +1,8 @@
 const { MULTI_PAYMENT } = require('@arkecosystem/crypto').constants
 
-require('../../../../lib/matchers/transactions/types/multi-payment')
+expect.extend({
+  toBeMultiPaymentType: require('../../../../lib/matchers/transactions/types/multi-payment')
+})
 
 describe('.toBeMultiPaymentType', () => {
   test('passes when given a valid transaction', () => {

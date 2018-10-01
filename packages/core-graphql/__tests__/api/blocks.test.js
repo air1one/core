@@ -1,13 +1,12 @@
 const app = require('../__support__/setup')
 const utils = require('../__support__/utils')
-require('@arkecosystem/core-test-utils/lib/matchers')
 
 let genesisBlock
 
 beforeAll(async () => {
   await app.setUp()
 
-  genesisBlock = require('@arkecosystem/core-test-utils/config/testnet/genesisBlock.json')
+  genesisBlock = require('../__fixtures__/genesisBlock.json')
 })
 
 afterAll(() => {
@@ -20,7 +19,8 @@ describe('GraphQL API { blocks }', () => {
       const query = `{ blocks(filter: { generatorPublicKey: "${genesisBlock.generatorPublicKey}" }) { id } }`
       const response = await utils.request(query)
 
-      expect(response).toBeSuccessfulResponse()
+      utils.expectSuccessful(response)
+      utils.expectResource(response)
 
       const data = response.data.data
       expect(data).toBeObject()

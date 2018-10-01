@@ -14,10 +14,6 @@ module.exports = async (p2p, config) => {
     port: config.port
   })
 
-  // await server.register({
-  //  plugin: require('./plugins/validate-headers')
-  // })
-
   await server.register({
     plugin: require('./plugins/accept-request'),
     options: {

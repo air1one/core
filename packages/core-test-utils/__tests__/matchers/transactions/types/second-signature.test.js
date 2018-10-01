@@ -1,6 +1,8 @@
 const { SECOND_SIGNATURE } = require('@arkecosystem/crypto').constants
 
-require('../../../../lib/matchers/transactions/types/second-signature')
+expect.extend({
+  toBeSecondSignatureType: require('../../../../lib/matchers/transactions/types/second-signature')
+})
 
 describe('.toBeSecondSignatureType', () => {
   test('passes when given a valid transaction', () => {

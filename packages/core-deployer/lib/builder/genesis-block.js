@@ -1,4 +1,5 @@
-const { Bignum, client, crypto } = require('@arkecosystem/crypto')
+const { client, crypto } = require('@arkecosystem/crypto')
+const bignum = require('bigi')
 const bip39 = require('bip39')
 const ByteBuffer = require('bytebuffer')
 const { createHash } = require('crypto')
@@ -47,7 +48,7 @@ module.exports = class GenesisBlockBuilder {
    */
   __createWallet () {
     const passphrase = bip39.generateMnemonic()
-    const keys = crypto.getKeys(passphrase)
+    const keys = crypto.getKeys(passphrase, this.network)
 
     return {
       address: crypto.getAddress(keys.publicKey, this.prefixHash),
@@ -207,18 +208,19 @@ module.exports = class GenesisBlockBuilder {
       blockBuffer[i] = hash[7 - i]
     }
 
-    return new Bignum(blockBuffer.toString('hex'), 16).toString()
+    return bignum.fromBuffer(blockBuffer).toString()
   }
 
   /**
    * Sign block with keys.
    * @param  {Object} block
-   * @param  {Object]} keys
+   * @param  {ECPair]} keys
    * @return {String}
    */
   __signBlock (block, keys) {
     var hash = this.__getHash(block)
-    return crypto.signHash(hash, keys)
+
+    return keys.sign(hash).toDER().toString('hex')
   }
 
   /**
@@ -245,7 +247,7 @@ module.exports = class GenesisBlockBuilder {
       byteBuffer.writeInt(block.height)
 
       if (block.previousBlock) {
-        var previousBlock = Buffer.from(new Bignum(block.previousBlock).toString(16), 'hex')
+        var previousBlock = bignum(block.previousBlock).toBuffer({size: '8'})
 
         for (let i = 0; i < 8; i++) {
           byteBuffer.writeByte(previousBlock[i])

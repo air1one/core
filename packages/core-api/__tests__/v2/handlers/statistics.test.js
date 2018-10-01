@@ -1,6 +1,5 @@
 'use strict'
 
-require('@arkecosystem/core-test-utils/lib/matchers')
 const app = require('../../__support__/setup')
 const utils = require('../utils')
 
@@ -16,8 +15,8 @@ describe.skip('API 2.0 - Statistics', () => {
   describe('GET /statistics/blockchain', () => {
     it('should GET the blockchain statistics', async () => {
       const response = await utils.request('GET', 'statistics/blockchain')
-      expect(response).toBeSuccessfulResponse()
-      expect(response.data.data).toBeObject()
+      utils.expectSuccessful(response)
+      utils.expectResource(response)
 
       expect(response.data.data.supply).toBeObject()
       expect(response.data.data.supply.initial).toBeNumber()
@@ -45,8 +44,8 @@ describe.skip('API 2.0 - Statistics', () => {
   describe('GET /statistics/transactions', () => {
     it('should GET the transaction statistics', async () => {
       const response = await utils.request('GET', 'statistics/transactions')
-      expect(response).toBeSuccessfulResponse()
-      expect(response.data.data).toBeObject()
+      utils.expectSuccessful(response)
+      utils.expectResource(response)
 
       expect(response.data.data.count).toBeNumber()
       expect(response.data.data.amount).toBeNumber()
@@ -58,8 +57,8 @@ describe.skip('API 2.0 - Statistics', () => {
   describe('GET /statistics/blocks', () => {
     it('should GET the block statistics', async () => {
       const response = await utils.request('GET', 'statistics/blocks')
-      expect(response).toBeSuccessfulResponse()
-      expect(response.data.data).toBeObject()
+      utils.expectSuccessful(response)
+      utils.expectResource(response)
 
       expect(response.data.data.count).toBeNumber()
       expect(response.data.data.rewards).toBeNumber()
@@ -70,8 +69,8 @@ describe.skip('API 2.0 - Statistics', () => {
   describe('GET /statistics/votes', () => {
     it('should GET the vote statistics', async () => {
       const response = await utils.request('GET', 'statistics/votes')
-      expect(response).toBeSuccessfulResponse()
-      expect(response.data.data).toBeObject()
+      utils.expectSuccessful(response)
+      utils.expectResource(response)
 
       expect(response.data.data.count).toBeNumber()
       expect(response.data.data.amount).toBeNumber()
@@ -82,8 +81,8 @@ describe.skip('API 2.0 - Statistics', () => {
   describe('GET /statistics/unvotes', () => {
     it('should GET the unvote statistics', async () => {
       const response = await utils.request('GET', 'statistics/unvotes')
-      expect(response).toBeSuccessfulResponse()
-      expect(response.data.data).toBeObject()
+      utils.expectSuccessful(response)
+      utils.expectResource(response)
 
       expect(response.data.data.count).toBeNumber()
       expect(response.data.data.amount).toBeNumber()

@@ -1,6 +1,6 @@
 'use strict'
 
-const toDispatch = (received, dispatcher, arg) => {
+module.exports = (received, dispatcher, arg) => {
   const mock = jest.fn()
 
   dispatcher.dispatch = mock
@@ -16,7 +16,3 @@ const toDispatch = (received, dispatcher, arg) => {
     pass
   }
 }
-
-expect.extend({
-  toDispatch
-})

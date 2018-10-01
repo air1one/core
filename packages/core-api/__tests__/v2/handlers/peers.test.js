@@ -1,10 +1,9 @@
 'use strict'
 
-require('@arkecosystem/core-test-utils/lib/matchers')
 const app = require('../../__support__/setup')
 const utils = require('../utils')
 
-const peers = require('@arkecosystem/core-test-utils/config/testnet/peers.json')
+const peerIp = '167.114.29.32'
 
 beforeAll(async () => {
   await app.setUp()
@@ -18,8 +17,8 @@ describe('API 2.0 - Peers', () => {
   describe('GET /peers', () => {
     it('should GET all the peers', async () => {
       const response = await utils.request('GET', 'peers')
-      expect(response).toBeSuccessfulResponse()
-      expect(response.data.data).toBeArray()
+      utils.expectSuccessful(response)
+      utils.expectCollection(response)
 
       expect(response.data.data[0]).toBeObject()
     })
@@ -27,9 +26,9 @@ describe('API 2.0 - Peers', () => {
 
   describe('GET /peers/:ip', () => {
     it('should GET a peer by the given ip', async () => {
-      const response = await utils.request('GET', `peers/${peers.list[0].ip}`)
-      expect(response).toBeSuccessfulResponse()
-      expect(response.data.data).toBeObject()
+      const response = await utils.request('GET', `peers/${peerIp}`)
+      utils.expectSuccessful(response)
+      utils.expectResource(response)
 
       expect(response.data.data).toBeObject()
     })

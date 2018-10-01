@@ -1,6 +1,8 @@
 const { DELEGATE_RESIGNATION } = require('@arkecosystem/crypto').constants
 
-require('../../../../lib/matchers/transactions/types/delegate-resignation')
+expect.extend({
+  toBeDelegateResignationType: require('../../../../lib/matchers/transactions/types/delegate-resignation')
+})
 
 describe('.toBeDelegateResignationType', () => {
   test('passes when given a valid transaction', () => {

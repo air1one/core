@@ -1,5 +1,4 @@
 const Handler = require('./handler')
-const Bignum = require('../../utils/bignum')
 
 class MultiPaymentHandler extends Handler {
   /**
@@ -13,9 +12,9 @@ class MultiPaymentHandler extends Handler {
       return false
     }
 
-    const amount = transaction.asset.payments.reduce((total, payment) => (total.plus(payment.amount)), Bignum.ZERO)
+    const amount = transaction.asset.payments.reduce((total, payment) => (total += payment.amount), 0)
 
-    return (wallet.balance.minus(amount).minus(transaction.fee)).toNumber() >= 0
+    return wallet.balance - amount - transaction.fee > -1
   }
 
   /**

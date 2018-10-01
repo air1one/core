@@ -1,6 +1,5 @@
 'use strict'
 
-require('@arkecosystem/core-test-utils/lib/matchers')
 const app = require('../../__support__/setup')
 const utils = require('../utils')
 
@@ -10,7 +9,7 @@ const delegate = {
 }
 
 beforeAll(async () => {
-  await app.setUp()
+  await app.setUp({})
 })
 
 afterAll(async () => {
@@ -21,7 +20,7 @@ describe('API 1.0 - Delegates', () => {
   describe('GET /delegates', () => {
     it('should be ok', async () => {
       const response = await utils.request('GET', 'delegates')
-      expect(response).toBeSuccessfulResponse()
+      utils.expectSuccessful(response)
 
       expect(response.data).toBeObject()
       utils.expectDelegate(response.data.delegates[0])
@@ -31,7 +30,7 @@ describe('API 1.0 - Delegates', () => {
   describe('GET /delegates/get', () => {
     it('should be ok using a username', async () => {
       const response = await utils.request('GET', 'delegates/get', { username: delegate.username })
-      expect(response).toBeSuccessfulResponse()
+      utils.expectSuccessful(response)
 
       expect(response.data).toBeObject()
       utils.expectDelegate(response.data.delegate, delegate)
@@ -39,7 +38,7 @@ describe('API 1.0 - Delegates', () => {
 
     it('should be ok using a publicKey', async () => {
       const response = await utils.request('GET', 'delegates/get', { publicKey: delegate.publicKey })
-      expect(response).toBeSuccessfulResponse()
+      utils.expectSuccessful(response)
 
       expect(response.data).toBeObject()
       utils.expectDelegate(response.data.delegate, delegate)
@@ -49,7 +48,7 @@ describe('API 1.0 - Delegates', () => {
   describe('GET /delegates/count', () => {
     it('should be ok', async () => {
       const response = await utils.request('GET', 'delegates/count')
-      expect(response).toBeSuccessfulResponse()
+      utils.expectSuccessful(response)
 
       expect(response.data).toBeObject()
       expect(response.data).toHaveProperty('count')
@@ -60,7 +59,7 @@ describe('API 1.0 - Delegates', () => {
   describe('GET /delegates/search', () => {
     it('should be ok searching a username', async () => {
       const response = await utils.request('GET', 'delegates/search', { q: delegate.username })
-      expect(response).toBeSuccessfulResponse()
+      utils.expectSuccessful(response)
 
       expect(response.data).toBeObject()
       utils.expectDelegate(response.data.delegates[0], delegate)
@@ -74,7 +73,7 @@ describe('API 1.0 - Delegates', () => {
   describe('GET /delegates/voters', () => {
     it('should be ok', async () => {
       const response = await utils.request('GET', 'delegates/voters', { publicKey: delegate.publicKey })
-      expect(response).toBeSuccessfulResponse()
+      utils.expectSuccessful(response)
 
       expect(response.data).toBeObject()
       utils.expectWallet(response.data.accounts[0])
@@ -84,7 +83,7 @@ describe('API 1.0 - Delegates', () => {
   describe('GET /delegates/fee', () => {
     it('should be ok', async () => {
       const response = await utils.request('GET', 'delegates/fee')
-      expect(response).toBeSuccessfulResponse()
+      utils.expectSuccessful(response)
 
       expect(response.data).toBeObject()
       expect(response.data).toHaveProperty('fee')
@@ -97,7 +96,7 @@ describe('API 1.0 - Delegates', () => {
       const response = await utils.request('GET', 'delegates/forging/getForgedByAccount', {
         generatorPublicKey: delegate.publicKey
       })
-      expect(response).toBeSuccessfulResponse()
+      utils.expectSuccessful(response)
 
       expect(response.data).toBeObject()
       expect(response.data).toHaveProperty('fees')

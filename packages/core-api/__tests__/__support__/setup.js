@@ -1,18 +1,23 @@
 'use strict'
 
+const path = require('path')
 const container = require('@arkecosystem/core-container')
-const containerHelper = require('@arkecosystem/core-test-utils/lib/helpers/container')
 
 const generateRound = require('./utils/generate-round')
-const activeDelegates = require('@arkecosystem/core-test-utils/fixtures/testnet/delegates')
-const round = generateRound(activeDelegates.publicKeys, 1)
+const activeDelegates = require('../__fixtures__/delegates.json')
+const round = generateRound(activeDelegates, 1)
 
-exports.setUp = async () => {
+exports.setUp = async (options = {
+    exclude: [ '@arkecosystem/core-forger' ]
+  }) => {
   jest.setTimeout(60000)
 
   process.env.ARK_SKIP_BLOCKCHAIN_STARTED_CHECK = true
 
-  await containerHelper.setUp({})
+  await container.setUp({
+    data: '~/.ark',
+    config: path.resolve(__dirname, './config')
+  }, options)
 
   const connection = container.resolvePlugin('database')
   await connection.db.rounds.truncate()

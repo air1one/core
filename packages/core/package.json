@@ -64,12 +64,11 @@
     "@arkecosystem/core-transaction-pool": "^0.1.1",
     "@arkecosystem/core-transaction-pool-redis": "^0.1.1",
     "@arkecosystem/core-webhooks": "^0.1.1",
-    "@arkecosystem/crypto": "^0.2.0",
+    "@arkecosystem/crypto": "^0.1.1",
     "bip38": "^2.0.2",
     "commander": "^2.15.1",
     "fs": "^0.0.1-security",
-    "wif": "^2.0.6",
-    "nock": "*"
+    "wif": "^2.0.6"
   },
   "publishConfig": {
     "access": "public"

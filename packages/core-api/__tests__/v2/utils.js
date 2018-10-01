@@ -2,7 +2,6 @@
 
 const axios = require('axios')
 const { client, transactionBuilder, NetworkManager } = require('@arkecosystem/crypto')
-const apiHelpers = require('@arkecosystem/core-test-utils/lib/helpers/api')
 
 class Helpers {
   async request (method, path, params = {}) {
@@ -11,7 +10,17 @@ class Helpers {
 
     const server = require('@arkecosystem/core-container').resolvePlugin('api')
 
-    return apiHelpers.request(server, method, url, headers, params)
+    // Injecting the request into Hapi server instead of using axios
+    const injectOptions = {
+      method,
+      url,
+      headers,
+      payload: params
+    }
+
+    const response = await server.inject(injectOptions)
+    Object.assign(response, { data: response.result, status: response.statusCode })
+    return response
   }
 
   expectJson (response) {

@@ -20,9 +20,10 @@
   },
   "dependencies": {
     "@arkecosystem/core-container": "^0.1.1",
-    "@arkecosystem/crypto": "^0.2.0",
+    "@arkecosystem/crypto": "^0.1.1",
     "@keyv/sqlite": "^2.0.0",
     "axios": "^0.18.0",
+    "bigi": "^1.4.2",
     "bip38": "^2.0.2",
     "bip39": "^2.5.0",
     "hapi": "^17.5.0",
@@ -31,13 +32,11 @@
     "keyv": "^3.1.0",
     "lodash": "^4.17.10",
     "micromatch": "^3.1.10",
-    "uuid": "^3.3.2",
-    "wif": "^2.0.6"
+    "uuid": "^3.3.2"
   },
   "devDependencies": {
     "@arkecosystem/core-p2p": "^0.1.1",
-    "axios-mock-adapter": "^1.15.0",
-    "@arkecosystem/core-test-utils": "^0.1.1"
+    "axios-mock-adapter": "^1.15.0"
   },
   "publishConfig": {
     "access": "public"

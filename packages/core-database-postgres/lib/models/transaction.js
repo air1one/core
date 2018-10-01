@@ -37,15 +37,9 @@ module.exports = class Transaction extends Model {
       name: 'vendor_field_hex',
       prop: 'vendorFieldHex'
     }, {
-      name: 'amount',
-      init: col => {
-        return +col.value.toString()
-      }
+      name: 'amount'
     }, {
-      name: 'fee',
-      init: col => {
-        return +col.value.toString()
-      }
+      name: 'fee'
     }, {
       name: 'serialized'
     }])

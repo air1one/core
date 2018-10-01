@@ -1,6 +1,5 @@
 'use strict'
 
-require('@arkecosystem/core-test-utils/lib/matchers')
 const app = require('../../__support__/setup')
 const utils = require('../utils')
 
@@ -11,7 +10,7 @@ const delegate = {
 }
 
 beforeAll(async () => {
-  await app.setUp()
+  await app.setUp({})
 })
 
 afterAll(async () => {
@@ -22,8 +21,8 @@ describe('API 2.0 - Delegates', () => {
   describe('GET /delegates', () => {
     it('should GET all the delegates', async () => {
       const response = await utils.request('GET', 'delegates')
-      expect(response).toBeSuccessfulResponse()
-      expect(response.data.data).toBeArray()
+      utils.expectSuccessful(response)
+      utils.expectCollection(response)
 
       utils.expectDelegate(response.data.data[0])
     })
@@ -32,24 +31,24 @@ describe('API 2.0 - Delegates', () => {
   describe('GET /delegates/:id', () => {
     it('should GET a delegate by the given username', async () => {
       const response = await utils.request('GET', `delegates/${delegate.username}`)
-      expect(response).toBeSuccessfulResponse()
-      expect(response.data.data).toBeObject()
+      utils.expectSuccessful(response)
+      utils.expectResource(response)
 
       utils.expectDelegate(response.data.data, delegate)
     })
 
     it('should GET a delegate by the given address', async () => {
       const response = await utils.request('GET', `delegates/${delegate.address}`)
-      expect(response).toBeSuccessfulResponse()
-      expect(response.data.data).toBeObject()
+      utils.expectSuccessful(response)
+      utils.expectResource(response)
 
       utils.expectDelegate(response.data.data, delegate)
     })
 
     it('should GET a delegate by the given public key', async () => {
       const response = await utils.request('GET', `delegates/${delegate.publicKey}`)
-      expect(response).toBeSuccessfulResponse()
-      expect(response.data.data).toBeObject()
+      utils.expectSuccessful(response)
+      utils.expectResource(response)
 
       utils.expectDelegate(response.data.data, delegate)
     })
@@ -58,8 +57,8 @@ describe('API 2.0 - Delegates', () => {
   describe('POST /delegates/search', () => {
     it('should POST a search for delegates with a username that matches the given string', async () => {
       const response = await utils.request('POST', 'delegates/search', { username: delegate.username })
-      expect(response).toBeSuccessfulResponse()
-      expect(response.data.data).toBeArray()
+      utils.expectSuccessful(response)
+      utils.expectCollection(response)
 
       expect(response.data.data).toHaveLength(1)
 
@@ -70,8 +69,8 @@ describe('API 2.0 - Delegates', () => {
   describe.skip('GET /delegates/:id/blocks', () => {
     it('should GET all blocks for a delegate by the given identifier', async () => {
       const response = await utils.request('GET', `delegates/${delegate.publicKey}/blocks`)
-      expect(response).toBeSuccessfulResponse()
-      expect(response.data.data).toBeArray()
+      utils.expectSuccessful(response)
+      utils.expectCollection(response)
       utils.expectBlock(response.data.data[0])
     })
   })
@@ -79,8 +78,8 @@ describe('API 2.0 - Delegates', () => {
   describe('GET /delegates/:id/voters', () => {
     it('should GET all voters (wallets) for a delegate by the given identifier', async () => {
       const response = await utils.request('GET', `delegates/${delegate.publicKey}/voters`)
-      expect(response).toBeSuccessfulResponse()
-      expect(response.data.data).toBeArray()
+      utils.expectSuccessful(response)
+      utils.expectCollection(response)
 
       utils.expectWallet(response.data.data[0])
     })

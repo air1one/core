@@ -79,8 +79,7 @@ module.exports = class WalletsRepository {
    * @return {Object}
    */
   top (params = {}) {
-    const wallets = Object.values(this.all())
-      .sort((a, b) => (b.balance.toNumber() - a.balance.toNumber()))
+    const wallets = orderBy(this.all(), ['balance'], ['desc'])
 
     return {
       rows: limitRows(wallets, params),

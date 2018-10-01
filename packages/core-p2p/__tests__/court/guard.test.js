@@ -7,14 +7,12 @@ const ARK_ENV = process.env.ARK_ENV
 const defaults = require('../../lib/defaults')
 const offences = require('../../lib/court/offences')
 
-let container
 let guard
 let Peer
 let peerMock
 
 beforeAll(async () => {
   await app.setUp()
-  container = require('@arkecosystem/core-container')
 
   guard = require('../../lib/court/guard')
   Peer = require('../../lib/peer')
@@ -107,9 +105,6 @@ describe('Guard', () => {
     })
 
     it('should return a 1 day suspension for "Blacklisted"', () => {
-      const config = container.resolvePlugin('config')
-      config.peers.blackList = [ 'dummy-ip-addr' ]
-
       const { until, reason } = guard.__determineOffence({
         nethash: 'd9acd04bde4234a81addb8482333b4ac906bed7be5a9970ce8ada428bd083192',
         ip: 'dummy-ip-addr'

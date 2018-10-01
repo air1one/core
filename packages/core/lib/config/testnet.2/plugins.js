@@ -16,9 +16,7 @@ module.exports = {
           filename: process.env.ARK_LOG_FILE || `${process.env.ARK_PATH_DATA}/logs/core/${process.env.ARK_NETWORK_NAME}.2/%DATE%.log`,
           datePattern: 'YYYY-MM-DD',
           level: process.env.ARK_LOG_LEVEL || 'debug',
-          zippedArchive: true,
-          maxSize: '100m',
-          maxFiles: '10'
+          zippedArchive: true
         }
       }
     }

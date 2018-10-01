@@ -1,4 +1,6 @@
-require('../../../lib/matchers/transactions/valid')
+expect.extend({
+  toBeValidTransaction: require('../../../lib/matchers/transactions/valid')
+})
 
 const transaction = {
   version: 1,

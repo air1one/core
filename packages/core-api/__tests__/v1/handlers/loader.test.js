@@ -1,6 +1,5 @@
 'use strict'
 
-require('@arkecosystem/core-test-utils/lib/matchers')
 const app = require('../../__support__/setup')
 const utils = require('../utils')
 
@@ -16,7 +15,7 @@ describe('API 1.0 - Loader', () => {
   describe('GET /loader/status', () => {
     it('should be ok', async () => {
       const response = await utils.request('GET', 'loader/status')
-      expect(response).toBeSuccessfulResponse()
+      utils.expectSuccessful(response)
 
       expect(response.data).toBeObject()
       expect(response.data).toHaveProperty('loaded')
@@ -28,7 +27,7 @@ describe('API 1.0 - Loader', () => {
   describe('GET /loader/status/sync', () => {
     it('should be ok', async () => {
       const response = await utils.request('GET', 'loader/status/sync')
-      expect(response).toBeSuccessfulResponse()
+      utils.expectSuccessful(response)
 
       expect(response.data).toBeObject()
       expect(response.data).toHaveProperty('syncing')
@@ -41,7 +40,7 @@ describe('API 1.0 - Loader', () => {
   describe('GET /loader/autoconfigure', () => {
     it('should be ok', async () => {
       const response = await utils.request('GET', 'loader/autoconfigure')
-      expect(response).toBeSuccessfulResponse()
+      utils.expectSuccessful(response)
 
       expect(response.data).toBeObject()
       expect(response.data.network).toBeObject()
