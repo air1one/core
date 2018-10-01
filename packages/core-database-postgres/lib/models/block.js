@@ -31,21 +31,12 @@ module.exports = class Block extends Model {
       prop: 'numberOfTransactions'
     }, {
       name: 'total_amount',
-      prop: 'totalAmount',
-      init: col => {
-        return +col.value.toString()
-      }
+      prop: 'totalAmount'
     }, {
       name: 'total_fee',
-      prop: 'totalFee',
-      init: col => {
-        return +col.value.toString()
-      }
+      prop: 'totalFee'
     }, {
-      name: 'reward',
-      init: col => {
-        return +col.value.toString()
-      }
+      name: 'reward'
     }, {
       name: 'payload_length',
       prop: 'payloadLength'

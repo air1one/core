@@ -1,7 +1,7 @@
 'use strict'
 
 const app = require('../__support__/setup')
-const { Bignum, crypto, constants: { ARKTOSHI } } = require('@arkecosystem/crypto')
+const { crypto } = require('@arkecosystem/crypto')
 
 let genesisBlock
 let repository
@@ -46,8 +46,8 @@ function generateWallets () {
       secondPublicKey: `secondPublicKey-${address}`,
       vote: `vote-${address}`,
       username: `username-${address}`,
-      balance: new Bignum(100),
-      voteBalance: new Bignum(200)
+      balance: 100,
+      voteBalance: 200
     }
   })
 }
@@ -298,7 +298,7 @@ describe('Delegate Repository', () => {
       const delegate = {
         username: 'test',
         publicKey: 'test',
-        balance: new Bignum(10000 * ARKTOSHI),
+        balance: 10000 * Math.pow(10, 8),
         producedBlocks: 1000,
         missedBlocks: 500
       }

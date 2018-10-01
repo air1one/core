@@ -1,7 +1,6 @@
 'use strict'
 
 const app = require('../../__support__/setup')
-const { Bignum, constants: { ARKTOSHI } } = require('@arkecosystem/crypto')
 
 let calculatorModule
 
@@ -20,7 +19,7 @@ afterAll(async (done) => {
 })
 
 const delegate = {
- balance: new Bignum(10000000 * ARKTOSHI),
+ balance: 10000000 * Math.pow(10, 8),
  producedBlocks: 100,
  missedBlocks: 10
 }

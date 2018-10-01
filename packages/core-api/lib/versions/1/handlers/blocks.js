@@ -1,7 +1,6 @@
 'use strict'
 
 const container = require('@arkecosystem/core-container')
-const { Bignum } = require('@arkecosystem/crypto')
 const config = container.resolvePlugin('config')
 const blockchain = container.resolvePlugin('blockchain')
 
@@ -198,10 +197,9 @@ exports.supply = {
   handler (request, h) {
     const lastBlock = blockchain.getLastBlock()
     const constants = config.getConstants(lastBlock.data.height)
-    const rewards = new Bignum(constants.reward).times(lastBlock.data.height - constants.height)
 
     return utils.respondWith({
-      supply: new Bignum(config.genesisBlock.totalAmount).plus(rewards).toNumber()
+      supply: config.genesisBlock.totalAmount + (lastBlock.data.height - constants.height) * constants.reward
     })
   }
 }
@@ -218,7 +216,6 @@ exports.status = {
   handler (request, h) {
     const lastBlock = blockchain.getLastBlock()
     const constants = config.getConstants(lastBlock.data.height)
-    const rewards = new Bignum(constants.reward).times(lastBlock.data.height - constants.height)
 
     return utils.respondWith({
       epoch: constants.epoch,
@@ -227,7 +224,7 @@ exports.status = {
       milestone: ~~(lastBlock.data.height / 3000000),
       nethash: config.network.nethash,
       reward: constants.reward,
-      supply: new Bignum(config.genesisBlock.totalAmount).plus(rewards).toNumber()
+      supply: config.genesisBlock.totalAmount + (lastBlock.data.height - constants.height) * constants.reward
     })
   }
 }

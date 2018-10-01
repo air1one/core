@@ -18,10 +18,7 @@ module.exports = class Round extends Model {
       name: 'public_key',
       prop: 'publicKey'
     }, {
-      name: 'balance',
-      init: col => {
-        return +col.value.toString()
-      }
+      name: 'balance'
     }, {
       name: 'round'
     }])

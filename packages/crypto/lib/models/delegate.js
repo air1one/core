@@ -1,5 +1,4 @@
 const bip38 = require('bip38')
-const Bignum = require('../utils/bignum')
 const wif = require('wif')
 const { createHash } = require('crypto')
 const otplib = require('otplib')
@@ -113,15 +112,15 @@ module.exports = class Delegate {
   forge (transactions, options) {
     if (!options.version && (this.encryptedKeys || !this.bip38)) {
       const transactionData = {
-        amount: Bignum.ZERO,
-        fee: Bignum.ZERO,
+        amount: 0,
+        fee: 0,
         sha256: createHash('sha256')
       }
 
       const sortedTransactions = sortTransactions(transactions)
       sortedTransactions.forEach(transaction => {
-        transactionData.amount = transactionData.amount.plus(transaction.amount)
-        transactionData.fee = transactionData.fee.plus(transaction.fee)
+        transactionData.amount += transaction.amount
+        transactionData.fee += transaction.fee
         transactionData.sha256.update(Buffer.from(transaction.id, 'hex'))
       })
 

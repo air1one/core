@@ -1,6 +1,5 @@
 const configManager = require('../managers/config')
 const { ARKTOSHI, TRANSACTION_TYPES } = require('../constants')
-const Bignum = require('../utils/bignum')
 const crypto = require('../crypto/crypto')
 const transactionHandler = require('../handlers/transactions')
 
@@ -34,18 +33,18 @@ module.exports = class Wallet {
     this.address = address
     this.publicKey = null
     this.secondPublicKey = null
-    this.balance = Bignum.ZERO
+    this.balance = 0
     this.vote = null
     this.voted = false
     this.username = null
     this.lastBlock = null
-    this.voteBalance = Bignum.ZERO
+    this.voteBalance = 0
     this.multisignature = null
     this.dirty = true
     this.producedBlocks = 0
     this.missedBlocks = 0
-    this.forgedFees = Bignum.ZERO
-    this.forgedRewards = Bignum.ZERO
+    this.forgedFees = 0
+    this.forgedRewards = 0
   }
 
   /**
@@ -113,12 +112,12 @@ module.exports = class Wallet {
    */
   applyBlock (block) {
     if (block.generatorPublicKey === this.publicKey || crypto.getAddress(block.generatorPublicKey) === this.address) {
-      this.balance = this.balance.plus(block.reward).plus(block.totalFee)
+      this.balance += +block.reward + +block.totalFee
 
       // update stats
       this.producedBlocks++
-      this.forgedFees = this.forgedFees.plus(block.totalFee)
-      this.forgedRewards = this.forgedRewards.plus(block.reward)
+      this.forgedFees += +block.totalFee
+      this.forgedRewards += +block.reward
       this.lastBlock = block
     }
 
@@ -131,11 +130,11 @@ module.exports = class Wallet {
    */
   revertBlock (block) {
     if (block.generatorPublicKey === this.publicKey || crypto.getAddress(block.generatorPublicKey) === this.address) {
-      this.balance = this.balance.minus(block.reward).minus(block.totalFee)
+      this.balance -= block.reward + block.totalFee
 
       // update stats
-      this.forgedFees = this.forgedFees.minus(block.totalFee)
-      this.forgedRewards = this.forgedRewards.minus(block.reward)
+      this.forgedFees -= block.totalFee
+      this.forgedRewards -= block.reward
       this.lastBlock = block
       this.producedBlocks--
 
@@ -202,7 +201,7 @@ module.exports = class Wallet {
     if (this.multisignature) {
       audit.push({'Mutisignature': this.verifySignatures(transaction, this.multisignature)})
     } else {
-      audit.push({'Remaining amount': this.balance.minus(transaction.amount).minus(transaction.fee).toNumber()})
+      audit.push({'Remaining amount': this.balance - transaction.amount - transaction.fee})
       audit.push({'Signature validation': crypto.verify(transaction)})
       // TODO: this can blow up if 2nd phrase and other transactions are in the wrong order
       if (this.secondPublicKey) {
@@ -248,7 +247,7 @@ module.exports = class Wallet {
     }
 
     if (transaction.type === TRANSACTION_TYPES.MULTI_PAYMENT) {
-      const amount = transaction.asset.payments.reduce((a, p) => (a.plus(p.amount)), Bignum.ZERO)
+      const amount = transaction.asset.payments.reduce((a, p) => (a += p.amount), 0)
       audit.push({'Multipayment remaining amount': amount})
     }
 
@@ -272,7 +271,7 @@ module.exports = class Wallet {
    * @return {String}
    */
   toString () {
-    return `${this.address} (${this.balance.toNumber() / ARKTOSHI} ${configManager.config.client.symbol})`
+    return `${this.address}=${this.balance / ARKTOSHI}`
   }
 
   /**

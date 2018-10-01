@@ -1,6 +1,5 @@
 const BaseHandler = require('../../../lib/handlers/transactions/handler')
 const { ARKTOSHI } = require('../../../lib/constants')
-const Bignum = require('../../../lib/utils/bignum')
 
 let handler
 let wallet
@@ -11,7 +10,7 @@ beforeEach(() => {
 
   wallet = {
     address: 'DTRdbaUW3RQQSL5By4G43JVaeHiqfVp9oh',
-    balance: new Bignum(4527654310),
+    balance: 4527654310,
     publicKey: '034da006f958beba78ec54443df4a3f52237253f7ae8cbdb17dccf3feaa57f3126'
   }
 
@@ -21,8 +20,8 @@ beforeEach(() => {
     blockid: '11233167632577333611',
     type: 0,
     timestamp: 36482198,
-    amount: new Bignum(100000000),
-    fee: new Bignum(10000000),
+    amount: 100000000,
+    fee: 10000000,
     senderId: 'DTRdbaUW3RQQSL5By4G43JVaeHiqfVp9oh',
     recipientId: 'DTRdbaUW3RQQSL5By4G43JVaeHiqfVp9oh',
     senderPublicKey: '034da006f958beba78ec54443df4a3f52237253f7ae8cbdb17dccf3feaa57f3126',
@@ -61,11 +60,11 @@ describe('Handler', () => {
       handler.apply = jest.fn()
 
       const initialBalance = 1000 * ARKTOSHI
-      wallet.balance = new Bignum(initialBalance)
+      wallet.balance = initialBalance
 
       handler.applyTransactionToSender(wallet, transaction)
 
-      expect(wallet.balance).toEqual(new Bignum(initialBalance).minus(transaction.amount).minus(transaction.fee))
+      expect(wallet.balance).toBe(initialBalance - (transaction.amount + transaction.fee))
     })
 
     it('should not be ok', () => {
@@ -74,11 +73,11 @@ describe('Handler', () => {
       transaction.senderPublicKey = 'a'.repeat(66)
 
       const initialBalance = 1000 * ARKTOSHI
-      wallet.balance = new Bignum(initialBalance)
+      wallet.balance = initialBalance
 
       handler.applyTransactionToSender(wallet, transaction)
 
-      expect(wallet.balance).toEqual(new Bignum(initialBalance))
+      expect(wallet.balance).toBe(initialBalance)
     })
   })
 
@@ -91,11 +90,11 @@ describe('Handler', () => {
       handler.revert = jest.fn()
 
       const initialBalance = 1000 * ARKTOSHI
-      wallet.balance = new Bignum(initialBalance)
+      wallet.balance = initialBalance
 
       handler.revertTransactionForSender(wallet, transaction)
 
-      expect(wallet.balance).toEqual(new Bignum(initialBalance).plus(transaction.amount).plus(transaction.fee))
+      expect(wallet.balance).toBe(initialBalance + (transaction.amount + transaction.fee))
     })
 
     it('should not be ok', () => {
@@ -104,11 +103,11 @@ describe('Handler', () => {
       transaction.senderPublicKey = 'a'.repeat(66)
 
       const initialBalance = 1000 * ARKTOSHI
-      wallet.balance = new Bignum(initialBalance)
+      wallet.balance = initialBalance
 
       handler.revertTransactionForSender(wallet, transaction)
 
-      expect(wallet.balance).toEqual(new Bignum(initialBalance))
+      expect(wallet.balance).toBe(initialBalance)
     })
   })
 
@@ -119,22 +118,22 @@ describe('Handler', () => {
 
     it('should be ok', () => {
       const initialBalance = 1000 * ARKTOSHI
-      wallet.balance = new Bignum(initialBalance)
+      wallet.balance = initialBalance
 
       handler.applyTransactionToRecipient(wallet, transaction)
 
-      expect(wallet.balance).toEqual(new Bignum(initialBalance).plus(transaction.amount))
+      expect(wallet.balance).toBe(initialBalance + transaction.amount)
     })
 
     it('should not be ok', () => {
       transaction.recipientId = 'invalid-recipientId'
 
       const initialBalance = 1000 * ARKTOSHI
-      wallet.balance = new Bignum(initialBalance)
+      wallet.balance = initialBalance
 
       handler.applyTransactionToRecipient(wallet, transaction)
 
-      expect(wallet.balance).toEqual(new Bignum(initialBalance))
+      expect(wallet.balance).toBe(initialBalance)
     })
   })
 
@@ -145,22 +144,22 @@ describe('Handler', () => {
 
     it('should be ok', () => {
       const initialBalance = 1000 * ARKTOSHI
-      wallet.balance = new Bignum(initialBalance)
+      wallet.balance = initialBalance
 
       handler.revertTransactionForRecipient(wallet, transaction)
 
-      expect(wallet.balance).toEqual(new Bignum(initialBalance - transaction.amount))
+      expect(wallet.balance).toBe(initialBalance - transaction.amount)
     })
 
     it('should not be ok', () => {
       transaction.recipientId = 'invalid-recipientId'
 
       const initialBalance = 1000 * ARKTOSHI
-      wallet.balance = new Bignum(initialBalance)
+      wallet.balance = initialBalance
 
       handler.revertTransactionForRecipient(wallet, transaction)
 
-      expect(wallet.balance).toEqual(new Bignum(initialBalance))
+      expect(wallet.balance).toBe(initialBalance)
     })
   })
 })

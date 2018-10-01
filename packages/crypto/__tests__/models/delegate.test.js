@@ -1,8 +1,5 @@
-const Bignum = require('../../lib/utils/bignum')
 const Wallet = require('../../lib/models/wallet')
-const { ARKTOSHI } = require('../../lib/constants')
 const sortTransactions = require('../../lib/utils/sort-transactions')
-const configManager = require('../../lib/managers/config')
 
 describe('Models - Delegate', () => {
   describe('static sortTransactions', () => {
@@ -22,9 +19,9 @@ describe('Models - Delegate', () => {
       it('doesn\'t sort the transactions', () => {
         const address = 'Abcde'
         const wallet = new Wallet(address)
-        wallet.balance = new Bignum(ARKTOSHI)
+        wallet.balance = 10 ** 8
 
-        expect(wallet.toString()).toBe(`${address} (1 ${configManager.config.client.symbol})`)
+        expect(wallet.toString()).toBe(`${address}=1`)
       })
 
       // TODO probably useful for debugging
