@@ -7,7 +7,7 @@ module.exports = (transaction) => {
     blockid: engine.joi.number(),
     type: engine.joi.number().valid(TRANSACTION_TYPES.DELEGATE_REGISTRATION),
     timestamp: engine.joi.number().min(0).required(),
-    amount: engine.joi.alternatives().try(engine.joi.bignumber(), engine.joi.number().valid(0)),
+    amount: engine.joi.alternatives().try(engine.joi.bignumber(), engine.joi.number().valid(0).required()),
     fee: engine.joi.alternatives().try(engine.joi.bignumber(), engine.joi.number().min(1).required()),
     senderId: engine.joi.arkAddress(),
     recipientId: engine.joi.empty(),

@@ -1,13 +1,14 @@
 {
   "name": "@arkecosystem/crypto",
   "description": "Crypto utilities for the ARK blockchain",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "contributors": [
     "François-Xavier Thoorens <fx.thoorens@ark.io>",
     "Brian Faust <brian@ark.io>",
     "Alex Barnsley <alex@ark.io>",
     "Lúcio Rubens <lucio@ark.io>",
-    "Juan A. Martín <juan@ark.io>"
+    "Juan A. Martín <juan@ark.io>",
+    "Joshua Noack <joshua@ark.io>"
   ],
   "license": "MIT",
   "main": "lib/index.js",
@@ -33,6 +34,7 @@
     "bignumber.js": "^7.2.1",
     "bip32": "^1.0.2",
     "bip38": "^2.0.2",
+    "bip39": "^2.5.0",
     "bs58check": "^2.1.1",
     "bytebuffer": "^5.0.1",
     "create-hash": "^1.2.0",

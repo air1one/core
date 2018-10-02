@@ -2,7 +2,8 @@
 
 const _ = require('lodash')
 const app = require('../__support__/setup')
-const { crypto } = require('@arkecosystem/crypto')
+const { Bignum, crypto } = require('@arkecosystem/crypto')
+const { Block } = require('@arkecosystem/crypto').models
 
 let genesisBlock
 let genesisSenders
@@ -14,7 +15,7 @@ beforeAll(async (done) => {
 
   // Create the genesis block after the setup has finished or else it uses a potentially
   // wrong network config.
-  genesisBlock = require('../__fixtures__/genesisBlock')
+  genesisBlock = new Block(require('@arkecosystem/core-test-utils/config/testnet/genesisBlock.json'))
   genesisSenders = _.uniq(_.compact(genesisBlock.transactions.map(tx => tx.senderPublicKey)))
 
   done()
@@ -222,9 +223,9 @@ describe('Wallet Repository', () => {
 
   describe('top', () => {
     beforeEach(() => {
-      walletManager.reindex({ address: 'dummy-1', balance: 1000 })
-      walletManager.reindex({ address: 'dummy-2', balance: 2000 })
-      walletManager.reindex({ address: 'dummy-3', balance: 3000 })
+      walletManager.reindex({ address: 'dummy-1', balance: new Bignum(1000) })
+      walletManager.reindex({ address: 'dummy-2', balance: new Bignum(2000) })
+      walletManager.reindex({ address: 'dummy-3', balance: new Bignum(3000) })
     })
 
     it('should be a function', () => {
@@ -236,9 +237,9 @@ describe('Wallet Repository', () => {
 
       expect(count).toBe(3)
       expect(rows.length).toBe(3)
-      expect(rows[0].balance).toBe(3000)
-      expect(rows[1].balance).toBe(2000)
-      expect(rows[2].balance).toBe(1000)
+      expect(rows[0].balance).toEqual(new Bignum(3000))
+      expect(rows[1].balance).toEqual(new Bignum(2000))
+      expect(rows[2].balance).toEqual(new Bignum(1000))
     })
 
     it('should be ok with params', () => {
@@ -246,8 +247,8 @@ describe('Wallet Repository', () => {
 
       expect(count).toBe(3)
       expect(rows.length).toBe(2)
-      expect(rows[0].balance).toBe(2000)
-      expect(rows[1].balance).toBe(1000)
+      expect(rows[0].balance).toEqual(new Bignum(2000))
+      expect(rows[1].balance).toEqual(new Bignum(1000))
     })
 
     it('should be ok with params (offset = 0)', () => {
@@ -255,8 +256,8 @@ describe('Wallet Repository', () => {
 
       expect(count).toBe(3)
       expect(rows.length).toBe(2)
-      expect(rows[0].balance).toBe(3000)
-      expect(rows[1].balance).toBe(2000)
+      expect(rows[0].balance).toEqual(new Bignum(3000))
+      expect(rows[1].balance).toEqual(new Bignum(2000))
     })
 
     it('should be ok with params (no offset)', () => {
@@ -264,8 +265,8 @@ describe('Wallet Repository', () => {
 
       expect(count).toBe(3)
       expect(rows.length).toBe(2)
-      expect(rows[0].balance).toBe(3000)
-      expect(rows[1].balance).toBe(2000)
+      expect(rows[0].balance).toEqual(new Bignum(3000))
+      expect(rows[1].balance).toEqual(new Bignum(2000))
     })
 
     it('should be ok with params (no limit)', () => {
@@ -273,8 +274,8 @@ describe('Wallet Repository', () => {
 
       expect(count).toBe(3)
       expect(rows.length).toBe(2)
-      expect(rows[0].balance).toBe(2000)
-      expect(rows[1].balance).toBe(1000)
+      expect(rows[0].balance).toEqual(new Bignum(2000))
+      expect(rows[1].balance).toEqual(new Bignum(1000))
     })
 
     it('should be ok with legacy', () => {
@@ -282,9 +283,9 @@ describe('Wallet Repository', () => {
 
       expect(count).toBe(3)
       expect(rows.length).toBe(3)
-      expect(rows[0].balance).toBe(3000)
-      expect(rows[1].balance).toBe(2000)
-      expect(rows[2].balance).toBe(1000)
+      expect(rows[0].balance).toEqual(new Bignum(3000))
+      expect(rows[1].balance).toEqual(new Bignum(2000))
+      expect(rows[2].balance).toEqual(new Bignum(1000))
     })
   })
 
