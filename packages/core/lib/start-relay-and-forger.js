@@ -9,7 +9,10 @@ const container = require('@arkecosystem/core-container')
  * @return {void}
  */
 module.exports = async (options) => {
-  nock.recorder.rec()
+  nock.recorder.rec({
+    output_objects: true,
+    use_separator: false
+  })
 
   await container.setUp(options, {
     options: {
