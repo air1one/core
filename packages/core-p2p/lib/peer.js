@@ -212,6 +212,7 @@ module.exports = class Peer {
 
       return response.data
     } catch (error) {
+      logger.debug(`error : ${JSON.stringify(error)}`)
       this.delay = -1
       this.status = error.code
     }
