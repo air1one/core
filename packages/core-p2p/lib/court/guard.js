@@ -194,6 +194,7 @@ class Guard {
       return this.__determinePunishment(peer, offences.BLACKLISTED)
     }
 
+    logger.debug(`peer.status : ${peer.status}`)
     // NOTE: We check this extra because a response can still succeed if
     // it returns any codes that are not 4xx or 5xx.
     if (peer.status === 503) {
