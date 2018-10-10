@@ -3,7 +3,7 @@ jobs:
   build:
     working_directory: ~/ark-core
     docker:
-      - image: node:9
+      - image: node:9-browsers
       - image: redis:alpine
       - image: postgres:alpine
         environment:
@@ -29,12 +29,6 @@ jobs:
       - run:
           name: Create .ark/database directory
           command: mkdir -p $HOME/.ark/database
-      - run:
-          name: Running X virtual framebuffer
-          command: |
-            Xvfb -ac :99 -screen 0 1280x1024x16 +extension RANDR > /dev/null 2>&1
-            export DISPLAY=:99.0
-          background: true
       - run:
           name: Test
           command: ./node_modules/.bin/cross-env ARK_ENV=test ./node_modules/.bin/jest --detectOpenHandles --runInBand --forceExit
