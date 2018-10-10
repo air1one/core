@@ -17,7 +17,7 @@ jobs:
           command: 'echo "deb http://ftp.debian.org/debian stable main contrib non-free" >> /etc/apt/sources.list && apt-get update'
       - run:
           name: Install xsel
-          command: 'apt-get install -q xsel'
+          command: 'apt-get install -q xsel && export DISPLAY=:99.0 && sh -e /etc/init.d/xvfb start'
       - run:
           name: Install yarn 
           command: 'curl -o- -L https://yarnpkg.com/install.sh | bash && export PATH="$HOME/.yarn/bin:$PATH" && yarn config set cache-folder $HOME/.cache/yarn'
@@ -26,6 +26,9 @@ jobs:
       - run:
           name: Install packages
           command: yarn
+      - run:
+          name: Create .ark/database directory
+          command: mkdir -p $HOME/.ark/database
       - run:
           name: Test
           command: ./node_modules/.bin/cross-env ARK_ENV=test ./node_modules/.bin/jest --detectOpenHandles --runInBand
