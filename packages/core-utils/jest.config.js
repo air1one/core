@@ -1,15 +1,20 @@
+'use strict'
+
 module.exports = {
+  testEnvironment: 'node',
   bail: false,
   verbose: true,
-  testEnvironment: 'node',
-  testMatch: [ '**/packages/**/__tests__/**/*.test.js' ],
+  testMatch: [
+    '**/__tests__/**/*.test.js'
+  ],
   moduleFileExtensions: [
     'js',
     'json'
   ],
+  collectCoverage: false,
   coverageDirectory: '<rootDir>/.coverage',
   collectCoverageFrom: [
-    'packages/**/lib/**/*.js',
+    'lib/**/*.js',
     '!**/node_modules/**'
   ],
   watchman: false,
